@@ -8,10 +8,9 @@ public class Documento {
   private UUID _id;
   private TipoDocumento _tipo;
   private String _titulo;
-  private String _autor;
   private String _genero;
-  private LocalDate _fechaPublicacion;
   private Integer _valoracion;
+  private Integer _paginas;
 
   public Documento(
     UUID id,
@@ -20,16 +19,16 @@ public class Documento {
     String autor,
     String genero,
     LocalDate fechaPublicacion,
-    Integer valoracion
+    Integer valoracion,
+    Integer paginas
   ) {
     this._id = ValidadorDocumento.validarId(id);
     this._tipo = ValidadorDocumento.validarTipo(tipo);
     this._titulo = ValidadorDocumento.validarTitulo(titulo);
-    this._autor = ValidadorDocumento.textoOpcional(autor);
     this._genero = ValidadorDocumento.textoOpcional(genero);
-    this._fechaPublicacion = fechaPublicacion;
     this._valoracion = 
       ValidadorDocumento.validarValoracion(valoracion);
+    this._paginas = paginas;
   }
 
   public static Documento nuevo(
@@ -38,7 +37,8 @@ public class Documento {
     String autor,
     String genero,
     String fechaPublicacion,
-    Integer valoracion
+    Integer valoracion,
+    Integer paginas
   ) {
     return new Documento(
       UUID.randomUUID(), 
@@ -47,7 +47,8 @@ public class Documento {
       autor, 
       genero, 
       ValidadorDocumento.parsearFecha(fechaPublicacion),
-      valoracion
+      valoracion,
+      paginas
     );
   }
 
@@ -57,7 +58,8 @@ public class Documento {
     String autor,
     String genero,
     String fechaPublicacion,
-    Integer valoracion
+    Integer valoracion,
+    Integer paginas
   ) {
     return new Documento(
       this._id,
@@ -66,7 +68,8 @@ public class Documento {
       autor,
       genero,
       ValidadorDocumento.parsearFecha(fechaPublicacion),
-      valoracion
+      valoracion,
+      paginas
     );
   }
 
@@ -83,27 +86,15 @@ public class Documento {
     return this._titulo;
   }
 
-  public String getAutor() {
-    return this._autor;
-  }
-
   public String getGenero() {
     return this._genero;
-  }
-
-  public LocalDate getFechaPublicacion() {
-    return this._fechaPublicacion;
   }
 
   public Integer getValoracion() {
     return this._valoracion;
   }
 
-  public String getFechaPublicacionIso() {
-    if (this._fechaPublicacion == null) {
-      return null;
-    }
-
-    return this._fechaPublicacion.format(DateTimeFormatter.ISO_LOCAL_DATE);
+  public Integer getPaginas() {
+    return this._paginas;
   }
 }
