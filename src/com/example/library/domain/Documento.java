@@ -1,7 +1,5 @@
 package com.example.library.domain;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 public class Documento {
@@ -16,9 +14,7 @@ public class Documento {
     UUID id,
     TipoDocumento tipo,
     String titulo,
-    String autor,
     String genero,
-    LocalDate fechaPublicacion,
     Integer valoracion,
     Integer paginas
   ) {
@@ -34,9 +30,7 @@ public class Documento {
   public static Documento nuevo(
     TipoDocumento tipo,
     String titulo,
-    String autor,
     String genero,
-    String fechaPublicacion,
     Integer valoracion,
     Integer paginas
   ) {
@@ -44,9 +38,7 @@ public class Documento {
       UUID.randomUUID(), 
       tipo, 
       titulo, 
-      autor, 
       genero, 
-      ValidadorDocumento.parsearFecha(fechaPublicacion),
       valoracion,
       paginas
     );
@@ -55,9 +47,7 @@ public class Documento {
   public Documento actualizar(
     TipoDocumento tipo,
     String titulo,
-    String autor,
     String genero,
-    String fechaPublicacion,
     Integer valoracion,
     Integer paginas
   ) {
@@ -65,9 +55,7 @@ public class Documento {
       this._id,
       tipo,
       titulo,
-      autor,
       genero,
-      ValidadorDocumento.parsearFecha(fechaPublicacion),
       valoracion,
       paginas
     );

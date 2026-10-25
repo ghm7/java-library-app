@@ -1,16 +1,8 @@
 package com.example.library.domain;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.ResolverStyle;
-import java.util.Locale;
 import java.util.UUID;
 
 public class ValidadorDocumento {
-  private static DateTimeFormatter _FORMATO_FECHA = DateTimeFormatter
-    .ofPattern("uuuu-MM-dd", Locale.ROOT)
-    .withResolverStyle(ResolverStyle.STRICT);
-  
   private ValidadorDocumento() {
   }
 
@@ -44,27 +36,6 @@ public class ValidadorDocumento {
     }
 
     return texto;
-  }
-
-  public static LocalDate parsearFecha(String fecha) {
-    if (fecha == null || fecha.isBlank()) {
-      return null;
-    }
-
-    String valor = fecha.trim();
-    if (!valor.matches("\\d{4}-\\d{2}-\\d{2}")) {
-      throw new ValidarExcepcion(
-        "La fecha debe tener el formato ISO yyyy-MM-dd"
-      );
-    }
-
-    try {
-      return LocalDate.parse(valor, _FORMATO_FECHA);
-    } catch (Exception e) {
-      throw new ValidarExcepcion(
-        "La fecha de publicación no es válida"
-      );
-    }
   }
 
   public static Integer validarValoracion(Integer valoracion) {
