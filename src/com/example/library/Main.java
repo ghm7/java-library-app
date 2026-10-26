@@ -1,14 +1,20 @@
 package com.example.library;
 
-import javax.swing.JFrame;
+import javax.swing.JFrame; 
+import javax.swing.SwingUtilities;
+import com.example.library.ui.MainWindow;
+import com.example.library.ui.UiTheme;
 import javax.swing.JLabel;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 
 public final class Main {
   public static void main(String[] args) {
-    SwingUtilities.invokeLater(Main::crearVentana);
+	  SwingUtilities.invokeLater(() -> {
+	      UiTheme.installLookAndFeel();
+	      new MainWindow().setVisible(true);
+  });
   }
+
 
   private static void crearVentana() {
     JFrame ventana = new JFrame("Biblioteca Java");
