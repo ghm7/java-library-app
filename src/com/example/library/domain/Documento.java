@@ -1,8 +1,11 @@
 package com.example.library.domain;
 
+import java.io.Serializable;
 import java.util.UUID;
 
-public class Documento {
+public class Documento implements Serializable {
+  private static final long serialVersionUID = 1L;
+
   private UUID _id;
   private TipoDocumento _tipo;
   private String _titulo;
@@ -22,8 +25,7 @@ public class Documento {
     this._tipo = ValidadorDocumento.validarTipo(tipo);
     this._titulo = ValidadorDocumento.validarTitulo(titulo);
     this._genero = ValidadorDocumento.textoOpcional(genero);
-    this._valoracion = 
-      ValidadorDocumento.validarValoracion(valoracion);
+    this._valoracion = ValidadorDocumento.validarValoracion(valoracion);
     this._paginas = paginas;
   }
 
@@ -35,10 +37,10 @@ public class Documento {
     Integer paginas
   ) {
     return new Documento(
-      UUID.randomUUID(), 
-      tipo, 
-      titulo, 
-      genero, 
+      UUID.randomUUID(),
+      tipo,
+      titulo,
+      genero,
       valoracion,
       paginas
     );
@@ -61,7 +63,6 @@ public class Documento {
     );
   }
 
-  // Getters
   public UUID getId() {
     return this._id;
   }
