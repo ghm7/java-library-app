@@ -9,6 +9,7 @@ public class Documento implements Serializable {
   private UUID _id;
   private TipoDocumento _tipo;
   private String _titulo;
+  private String _descripcion;
   private String _genero;
   private Integer _valoracion;
   private Integer _paginas;
@@ -17,6 +18,7 @@ public class Documento implements Serializable {
     UUID id,
     TipoDocumento tipo,
     String titulo,
+    String descripcion,
     String genero,
     Integer valoracion,
     Integer paginas
@@ -24,14 +26,16 @@ public class Documento implements Serializable {
     this._id = ValidadorDocumento.validarId(id);
     this._tipo = ValidadorDocumento.validarTipo(tipo);
     this._titulo = ValidadorDocumento.validarTitulo(titulo);
+    this._descripcion = ValidadorDocumento.textoOpcional(descripcion);
     this._genero = ValidadorDocumento.textoOpcional(genero);
     this._valoracion = ValidadorDocumento.validarValoracion(valoracion);
-    this._paginas = paginas;
+    this._paginas = ValidadorDocumento.validarPaginas(paginas);
   }
 
   public static Documento nuevo(
     TipoDocumento tipo,
     String titulo,
+    String descripcion,
     String genero,
     Integer valoracion,
     Integer paginas
@@ -40,6 +44,7 @@ public class Documento implements Serializable {
       UUID.randomUUID(),
       tipo,
       titulo,
+      descripcion,
       genero,
       valoracion,
       paginas
@@ -49,6 +54,7 @@ public class Documento implements Serializable {
   public Documento actualizar(
     TipoDocumento tipo,
     String titulo,
+    String descripcion,
     String genero,
     Integer valoracion,
     Integer paginas
@@ -57,6 +63,7 @@ public class Documento implements Serializable {
       this._id,
       tipo,
       titulo,
+      descripcion,
       genero,
       valoracion,
       paginas
@@ -73,6 +80,10 @@ public class Documento implements Serializable {
 
   public String getTitulo() {
     return this._titulo;
+  }
+
+  public String getDescripcion() {
+    return this._descripcion;
   }
 
   public String getGenero() {
