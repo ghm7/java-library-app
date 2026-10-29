@@ -10,9 +10,9 @@ import javax.swing.SwingConstants;
 public class Principal {
   public static void main(String[] args) {
 	  SwingUtilities.invokeLater(() -> {
-	      TemaGrafico.instalarApariencia();
-	      _crearVentana();
-	      new VentanaPrincipal().setVisible(true);
+	    TemaGrafico.instalarApariencia();
+	    _crearVentana();
+	    new VentanaPrincipal().setVisible(true);
   });
   }
 
