@@ -1,16 +1,23 @@
 package com.example.library;
 
-import javax.swing.JFrame;
+import javax.swing.JFrame; 
+import javax.swing.SwingUtilities;
+import com.example.library.ui.VentanaPrincipal;
+import com.example.library.ui.TemaGrafico;
 import javax.swing.JLabel;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 
-public final class Main {
+public class Principal {
   public static void main(String[] args) {
-    SwingUtilities.invokeLater(Main::crearVentana);
+	  SwingUtilities.invokeLater(() -> {
+	      TemaGrafico.instalarApariencia();
+	      _crearVentana();
+	      new VentanaPrincipal().setVisible(true);
+  });
   }
 
-  private static void crearVentana() {
+
+  private static void _crearVentana() {
     JFrame ventana = new JFrame("Biblioteca Java");
 
     ventana.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
