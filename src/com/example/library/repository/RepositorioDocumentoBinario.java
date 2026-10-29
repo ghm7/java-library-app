@@ -164,6 +164,7 @@ public class RepositorioDocumentoBinario {
           documentoOriginal.getId(),
           documentoOriginal.getTipo(),
           documentoOriginal.getTitulo(),
+          documentoOriginal.getDescripcion(),
           documentoOriginal.getGenero(),
           documentoOriginal.getValoracion(), 
           documentoOriginal.getPaginas()
@@ -247,7 +248,7 @@ public class RepositorioDocumentoBinario {
 
   private void _validarId(UUID id) {
     if (id == null) {
-      RepositorioExcepcion.idObligatorio();
+      throw RepositorioExcepcion.idObligatorio();
     }
   }
 }

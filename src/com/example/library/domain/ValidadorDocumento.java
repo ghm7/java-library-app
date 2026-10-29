@@ -59,9 +59,37 @@ public class ValidadorDocumento {
 
     try {
       return validarValoracion(Integer.valueOf(valoracion.trim()));
-    } catch (Exception e) {
+    } catch (NumberFormatException e) {
       throw new ValidarExcepcion(
         "La valoración debe ser un numero entero."
+      );
+    }
+  }
+
+  public static Integer validarPaginas(Integer paginas) {
+    if (paginas == null) {
+      return null;
+    }
+
+    if (paginas < 1 || paginas > 999) {
+      throw new ValidarExcepcion(
+        "La cantidad de páginas debe estar entre 1 y 999."
+      );
+    }
+
+    return paginas;
+  }
+
+  public static Integer parsearPaginas(String paginas) {
+    if (paginas == null || paginas.isBlank()) {
+      return null;
+    }
+
+    try {
+      return validarPaginas(Integer.valueOf(paginas.trim()));
+    } catch (NumberFormatException e) {
+      throw new ValidarExcepcion(
+        "La cantidad de páginas debe ser un numero entero."
       );
     }
   }
