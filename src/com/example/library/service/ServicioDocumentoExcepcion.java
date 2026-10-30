@@ -33,7 +33,8 @@ public class ServicioDocumentoExcepcion extends RuntimeException {
 
   public static ServicioDocumentoExcepcion errorAlCrear(Throwable causa) {
     return new ServicioDocumentoExcepcion(
-      "No se pudo crear el documento."
+      "No se pudo crear el documento. " + causa.getMessage(),
+      causa
     );
   }
 
