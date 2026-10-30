@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.UUID;
 
 public class RepositorioExcepcion extends RuntimeException {
+  private final boolean _catalogoAusente;
   private static final String _MENSAJE_RUTA_OBLIGATORIA =
     "La ruta del catálogo es obligatoria.";
 
@@ -14,11 +15,24 @@ public class RepositorioExcepcion extends RuntimeException {
     "El id es obligatorio.";
 
   public RepositorioExcepcion(String mensaje) {
-    super(mensaje);
+    this(mensaje, null, false);
   }
 
   public RepositorioExcepcion(String mensaje, Throwable causa) {
+    this(mensaje, causa, false);
+  }
+
+  private RepositorioExcepcion(
+    String mensaje,
+    Throwable causa,
+    boolean catalogoAusente
+  ) {
     super(mensaje, causa);
+    this._catalogoAusente = catalogoAusente;
+  }
+
+  public boolean esCatalogoAusente() {
+    return this._catalogoAusente;
   }
 
   public static RepositorioExcepcion rutaObligatoria() {
@@ -36,7 +50,9 @@ public class RepositorioExcepcion extends RuntimeException {
   public static RepositorioExcepcion catalogoNoEncontrado(Path ruta) {
     return new RepositorioExcepcion(
       "No se encontró el catálogo: " + ruta
-        + ". Restaure un catálogo válido antes de continuar."
+        + ". Restaure un catálogo válido antes de continuar.",
+      null,
+      true
     );
   }
 
