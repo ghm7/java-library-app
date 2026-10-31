@@ -27,15 +27,15 @@ public class ResultadoCargaCatalogo {
     this._mensaje = mensaje == null ? "" : mensaje;
   }
 
-  public EstadoCargaCatalogo obtenerEstado() {
+  public EstadoCargaCatalogo getEstado() {
     return this._estado;
   }
 
-  public List<Documento> obtenerDocumentos() {
+  public List<Documento> getDocumentos() {
     return this._documentos;
   }
 
-  public String obtenerMensaje() {
+  public String getMensaje() {
     return this._mensaje;
   }
 }

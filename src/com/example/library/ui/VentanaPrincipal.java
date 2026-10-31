@@ -71,23 +71,23 @@ public class VentanaPrincipal extends JFrame {
         JPanel catalogo = Interfaz.superficie();
         catalogo.setLayout(new BorderLayout(0, 12));
 
-        if (this._resultadoCarga.obtenerEstado() == EstadoCargaCatalogo.CARGADO) {
+        if (this._resultadoCarga.getEstado() == EstadoCargaCatalogo.CARGADO) {
             catalogo.add(Interfaz.titulo("Catálogo cargado"), BorderLayout.NORTH);
             catalogo.add(
-                Interfaz.subtitulo(this._resultadoCarga.obtenerMensaje()),
+                Interfaz.subtitulo(this._resultadoCarga.getMensaje()),
                 BorderLayout.CENTER
             );
             return catalogo;
         }
 
-        String titulo = this._resultadoCarga.obtenerEstado()
+        String titulo = this._resultadoCarga.getEstado()
             == EstadoCargaCatalogo.AUSENTE
             ? "Catálogo no disponible"
             : "No se pudo cargar el catálogo";
 
         catalogo.add(Interfaz.titulo(titulo), BorderLayout.NORTH);
         catalogo.add(
-            Interfaz.subtitulo(this._resultadoCarga.obtenerMensaje()),
+            Interfaz.subtitulo(this._resultadoCarga.getMensaje()),
             BorderLayout.CENTER
         );
         return catalogo;
