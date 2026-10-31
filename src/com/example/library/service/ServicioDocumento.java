@@ -34,6 +34,15 @@ public class ServicioDocumento {
     }
   }
 
+  public Documento consultar(UUID id) {
+    ValidadorDocumento.validarId(id);
+    try {
+      return this._repositorio.buscarPorId(id);
+    } catch (RepositorioExcepcion e) {
+      throw ServicioDocumentoExcepcion.errorAlConsultar(e);
+    }
+  }
+
   public Documento crear(
     TipoDocumento tipo,
     String titulo,

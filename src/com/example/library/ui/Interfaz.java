@@ -7,6 +7,8 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextArea;
+import com.example.library.domain.TipoDocumento;
 
 public class Interfaz {
   private Interfaz() {}
@@ -28,12 +30,32 @@ public class Interfaz {
   public static JButton botonPrimario(String text) {
     JButton button = new JButton(text);
     button.setFont(new Font("SansSerif", Font.BOLD, 14));
-    button.setForeground(Color.WHITE);
+    button.setForeground(TemaGrafico.GRAFITO);
     button.setBackground(TemaGrafico.CORAL);
     button.setBorder(BorderFactory.createEmptyBorder(10, 16, 10, 16));
     button.setFocusPainted(false);
     button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
     return button;
+  }
+
+  public static JTextArea texto(String texto) {
+    JTextArea area = new JTextArea(texto);
+    area.setEditable(false);
+    area.setLineWrap(true);
+    area.setWrapStyleWord(true);
+    area.setOpaque(false);
+    area.setFont(TemaGrafico.SUBTITULO);
+    area.setForeground(TemaGrafico.GRAFITO);
+    return area;
+  }
+
+  public static String nombreTipo(TipoDocumento tipo) {
+    return switch (tipo) {
+      case LIBRO -> "Libro";
+      case ARTICULO_CIENTIFICO -> "Artículo científico";
+      case PUBLICACION -> "Publicación";
+      case OTRO -> "Otro";
+    };
   }
 
   public static JPanel superficie() {
