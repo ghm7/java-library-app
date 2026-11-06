@@ -47,6 +47,7 @@ public class PanelDocumentos extends JPanel {
         if (servicio == null) {
             throw new IllegalArgumentException("El servicio es obligatorio.");
         }
+
         _servicio = servicio;
         _carga = new ServicioCargaCatalogo(servicio);
         _confirmarEliminacion = confirmarEliminacion == null
@@ -99,7 +100,9 @@ public class PanelDocumentos extends JPanel {
             JOptionPane.WARNING_MESSAGE,
             null,
             new String[] { "Eliminar", "Cancelar" },
-            "Cancelar");
+            "Cancelar"
+        );
+
         return opcion == JOptionPane.YES_OPTION;
     }
 
@@ -148,6 +151,7 @@ public class PanelDocumentos extends JPanel {
 
     private void _mostrarCatalogoCargado(ResultadoCargaCatalogo resultado, String aviso) {
         List<Documento> documentos = resultado.getDocumentos();
+
         if (documentos.isEmpty()) {
             _catalogo.add(
                 Interfaz.texto("El catálogo está vacío. Agregá el primer documento con «Nuevo documento»."),
@@ -155,12 +159,14 @@ public class PanelDocumentos extends JPanel {
         } else {
             _catalogo.add(_crearListaDocumentos(documentos), BorderLayout.CENTER);
         }
+
         _mensaje(aviso.isEmpty() ? resultado.getMensaje() : aviso, false);
     }
 
     private JScrollPane _crearListaDocumentos(List<Documento> documentos) {
         JPanel tarjetas = new JPanel(new GridLayout(0, 1, 0, 12));
         tarjetas.setOpaque(false);
+
         for (Documento documento : documentos) {
             tarjetas.add(_crearTarjetaDocumento(documento));
         }
@@ -172,6 +178,7 @@ public class PanelDocumentos extends JPanel {
         JScrollPane scroll = new JScrollPane(lista);
         scroll.getVerticalScrollBar().setUnitIncrement(20);
         scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+
         return scroll;
     }
 
@@ -180,14 +187,17 @@ public class PanelDocumentos extends JPanel {
         tarjeta.setLayout(new BorderLayout(16, 8));
         tarjeta.add(
             Interfaz.subtitulo(Interfaz.nombreTipo(documento.getTipo())),
-            BorderLayout.NORTH);
+            BorderLayout.NORTH
+        );
 
         JTextArea titulo = Interfaz.texto(documento.getTitulo());
         titulo.setRows(2);
         tarjeta.add(titulo, BorderLayout.CENTER);
         tarjeta.add(
             _boton("Ver detalle", () -> _mostrarDetalle(documento.getId(), "")),
-            BorderLayout.EAST);
+            BorderLayout.EAST
+        );
+
         return tarjeta;
     }
 
@@ -221,6 +231,7 @@ public class PanelDocumentos extends JPanel {
 
     private JScrollPane _crearCamposDetalle(Documento documento) {
         JPanel campos = Interfaz.superficie();
+
         campos.setLayout(new GridBagLayout());
         _agregarDetalle(campos, "Tipo", Interfaz.nombreTipo(documento.getTipo()));
         _agregarDetalle(campos, "Título", documento.getTitulo());
@@ -235,37 +246,48 @@ public class PanelDocumentos extends JPanel {
 
         JScrollPane scroll = new JScrollPane(cuerpo);
         scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+
         return scroll;
     }
 
     private JPanel _crearAccionesDetalle(UUID id) {
         JPanel acciones = new JPanel();
+
         acciones.setOpaque(false);
         acciones.add(_boton("Volver al catálogo", () -> _mostrarCatalogo("")));
         acciones.add(_boton("Editar", () -> _abrirFormulario(id)));
         acciones.add(_boton("Eliminar", () -> _eliminar(id)));
+
         return acciones;
     }
 
     private void _agregarDetalle(JPanel campos, String nombre, Object valor) {
         GridBagConstraints posicion = new GridBagConstraints();
+
         posicion.gridy = campos.getComponentCount() / 2;
         posicion.anchor = GridBagConstraints.NORTHWEST;
         posicion.insets = new Insets(6, 8, 6, 8);
+
         campos.add(Interfaz.subtitulo(nombre), posicion);
+
         JTextArea texto = Interfaz.texto(valor == null ? "Sin especificar" : valor.toString());
         texto.getAccessibleContext().setAccessibleName(nombre);
+
         int filas = switch (nombre) {
             case "Descripción" -> 5;
             case "Título" -> 2;
             default -> 1;
         };
+
         texto.setRows(filas);
+
         posicion.gridx = 1;
         posicion.weightx = 1;
         posicion.fill = GridBagConstraints.HORIZONTAL;
+
         JScrollPane scroll = new JScrollPane(texto);
         scroll.setBorder(BorderFactory.createEmptyBorder());
+
         campos.add(scroll, posicion);
     }
 
@@ -303,13 +325,15 @@ public class PanelDocumentos extends JPanel {
         if (formulario.getId() == null) {
             return _servicio.crear(
                 formulario.getTipo(), formulario.getTitulo(), formulario.getDescripcion(),
-                formulario.getGenero(), formulario.getValoracion(), formulario.getPaginas());
+                formulario.getGenero(), formulario.getValoracion(), formulario.getPaginas()
+            );
         }
 
         return _servicio.actualizar(
             formulario.getId(), formulario.getTipo(), formulario.getTitulo(),
             formulario.getDescripcion(), formulario.getGenero(),
-            formulario.getValoracion(), formulario.getPaginas());
+            formulario.getValoracion(), formulario.getPaginas()
+        );
     }
 
     private void _eliminar(UUID id) {
@@ -318,6 +342,7 @@ public class PanelDocumentos extends JPanel {
             if (!_confirmarEliminacion.test(documento)) {
                 return;
             }
+
             _servicio.eliminar(id);
             _mostrarCatalogo("Documento eliminado correctamente.");
         } catch (ServicioDocumentoExcepcion e) {

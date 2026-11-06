@@ -45,7 +45,8 @@ public class FormularioDocumento extends JPanel {
         _tipo.setRenderer((lista, valor, indice, seleccionado, foco) -> {
             String nombre = valor == null ? "" : Interfaz.nombreTipo(valor);
             return renderer.getListCellRendererComponent(
-                lista, nombre, indice, seleccionado, foco);
+                lista, nombre, indice, seleccionado, foco
+            );
         });
 
         _descripcion.setLineWrap(true);
@@ -57,6 +58,7 @@ public class FormularioDocumento extends JPanel {
     private JScrollPane _crearCuerpo() {
         JPanel campos = new JPanel(new GridBagLayout());
         campos.setOpaque(false);
+
         _agregarCampo(campos, 0, "Tipo *", _tipo, "tipo");
         _agregarCampo(campos, 1, "Título *", _titulo, "titulo");
         _agregarCampo(campos, 2, "Descripción", new JScrollPane(_descripcion), "descripcionScroll");
@@ -67,13 +69,17 @@ public class FormularioDocumento extends JPanel {
         JPanel cuerpo = new JPanel(new BorderLayout(0, 12));
         cuerpo.setOpaque(false);
         cuerpo.add(
-            Interfaz.subtitulo("* Obligatorio. Los demás campos pueden quedar vacíos."),
-            BorderLayout.NORTH);
+            Interfaz.subtitulo(
+                "* Obligatorio. Los demás campos pueden quedar vacíos."
+            ),
+                BorderLayout.NORTH
+            );
         cuerpo.add(campos, BorderLayout.CENTER);
 
         JPanel contenedor = new JPanel(new BorderLayout());
         contenedor.setOpaque(false);
         contenedor.add(cuerpo, BorderLayout.NORTH);
+
         return new JScrollPane(contenedor);
     }
 
@@ -88,11 +94,14 @@ public class FormularioDocumento extends JPanel {
 
         acciones.add(guardarBoton);
         acciones.add(cancelarBoton);
+        
         return acciones;
     }
 
-    private void _agregarCampo(JPanel campos, int fila, String nombre,
-            JComponent campo, String identificador) {
+    private void _agregarCampo(
+        JPanel campos, int fila, String nombre,
+        JComponent campo, String identificador
+    ) {
         GridBagConstraints restricciones = new GridBagConstraints();
         restricciones.gridy = fila;
         restricciones.insets = new Insets(6, 8, 6, 8);

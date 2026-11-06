@@ -15,6 +15,7 @@ public class VentanaPrincipal extends JFrame {
 
     public VentanaPrincipal(ServicioDocumento servicio) {
         super("Biblioteca Java");
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(900, 600));
         setSize(1000, 680);
@@ -32,7 +33,9 @@ public class VentanaPrincipal extends JFrame {
         JLabel marca = new JLabel("Biblioteca Java");
         marca.setForeground(TemaGrafico.CREMA);
         marca.setFont(TemaGrafico.TITULO);
+
         cabecera.add(marca, BorderLayout.WEST);
+
         return cabecera;
     }
 }
