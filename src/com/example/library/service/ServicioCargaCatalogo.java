@@ -10,7 +10,14 @@ public class ServicioCargaCatalogo {
   private final ServicioDocumento _servicioDocumento;
 
   public ServicioCargaCatalogo(RepositorioDocumentoBinario repositorio) {
-    this._servicioDocumento = new ServicioDocumento(repositorio);
+    this(new ServicioDocumento(repositorio));
+  }
+
+  public ServicioCargaCatalogo(ServicioDocumento servicioDocumento) {
+    if (servicioDocumento == null) {
+      throw new IllegalArgumentException("El servicio de documentos es obligatorio.");
+    }
+    this._servicioDocumento = servicioDocumento;
   }
 
   public ResultadoCargaCatalogo cargarCatalogo() {

@@ -1,9 +1,7 @@
 package com.example.library;
 
 import javax.swing.SwingUtilities;
-import com.example.library.repository.RepositorioDocumentoBinario;
-import com.example.library.service.ResultadoCargaCatalogo;
-import com.example.library.service.ServicioCargaCatalogo;
+import com.example.library.service.ServicioDocumento;
 import com.example.library.ui.VentanaPrincipal;
 import com.example.library.ui.TemaGrafico;
 
@@ -15,10 +13,6 @@ public class Principal {
   private static void _iniciarAplicacion() {
     TemaGrafico.instalarApariencia();
 
-    ResultadoCargaCatalogo resultado = new ServicioCargaCatalogo(
-      new RepositorioDocumentoBinario()
-    ).cargarCatalogo();
-
-    new VentanaPrincipal(resultado).setVisible(true);
+    new VentanaPrincipal(new ServicioDocumento()).setVisible(true);
   }
 }
