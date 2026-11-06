@@ -28,6 +28,7 @@ public class FormularioDocumento extends JPanel {
     private final JTextField _valoracion = new JTextField(8);
     private final JTextField _paginas = new JTextField(8);
     private final JLabel _encabezado = Interfaz.titulo("");
+    private final JButton _guardarBoton = Interfaz.botonPrimario("Guardar");
     private UUID _id;
 
     public FormularioDocumento(Consumer<FormularioDocumento> guardar, Runnable cancelar) {
@@ -87,12 +88,11 @@ public class FormularioDocumento extends JPanel {
         JPanel acciones = new JPanel();
         acciones.setOpaque(false);
 
-        JButton guardarBoton = Interfaz.botonPrimario("Guardar");
-        guardarBoton.addActionListener(e -> guardar.accept(this));
+        _guardarBoton.addActionListener(e -> guardar.accept(this));
         JButton cancelarBoton = new JButton("Cancelar");
         cancelarBoton.addActionListener(e -> cancelar.run());
 
-        acciones.add(guardarBoton);
+        acciones.add(_guardarBoton);
         acciones.add(cancelarBoton);
         
         return acciones;
@@ -145,6 +145,10 @@ public class FormularioDocumento extends JPanel {
 
     public UUID getId() {
         return _id;
+    }
+
+    public void setEscrituraHabilitada(boolean habilitada) {
+        _guardarBoton.setEnabled(habilitada);
     }
 
     public TipoDocumento getTipo() {
