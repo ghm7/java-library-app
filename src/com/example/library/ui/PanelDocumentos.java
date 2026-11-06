@@ -6,6 +6,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Predicate;
@@ -15,6 +16,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.Timer;
 import com.example.library.domain.Documento;
 import com.example.library.domain.ValidarExcepcion;
 import com.example.library.service.EstadoCargaCatalogo;
@@ -22,6 +24,7 @@ import com.example.library.service.ResultadoCargaCatalogo;
 import com.example.library.service.ServicioCargaCatalogo;
 import com.example.library.service.ServicioDocumento;
 import com.example.library.service.ServicioDocumentoExcepcion;
+import com.example.library.service.ServicioPeriodoDemo;
 
 /** Presentación y acciones Swing; todo acceso a datos pasa por el servicio. */
 public class PanelDocumentos extends JPanel {
@@ -38,22 +41,43 @@ public class PanelDocumentos extends JPanel {
     private final FormularioDocumento _formulario;
     private final JTextArea _mensaje = Interfaz.texto("");
     private final Predicate<Documento> _confirmarEliminacion;
+    private final ServicioPeriodoDemo _periodoDemo;
+    private final List<JButton> _accionesEscritura = new ArrayList<>();
+    private final Timer _vigilanteExpiracion;
+    private boolean _demoExpirada;
+    private boolean _avisoExpiracionMostrado;
 
     public PanelDocumentos(ServicioDocumento servicio) {
-        this(servicio, null);
+        this(servicio, null, new ServicioPeriodoDemo());
     }
 
     PanelDocumentos(ServicioDocumento servicio, Predicate<Documento> confirmarEliminacion) {
+        this(servicio, confirmarEliminacion, new ServicioPeriodoDemo());
+    }
+
+    PanelDocumentos(
+        ServicioDocumento servicio,
+        Predicate<Documento> confirmarEliminacion,
+        ServicioPeriodoDemo periodoDemo
+    ) {
         if (servicio == null) {
             throw new IllegalArgumentException("El servicio es obligatorio.");
+        }
+        if (periodoDemo == null) {
+            throw new IllegalArgumentException("El período de demo es obligatorio.");
         }
 
         _servicio = servicio;
         _carga = new ServicioCargaCatalogo(servicio);
+        _periodoDemo = periodoDemo;
+        _demoExpirada = _periodoDemo.estaExpirada();
         _confirmarEliminacion = confirmarEliminacion == null
             ? this::_confirmarEliminacion
             : confirmarEliminacion;
         _formulario = new FormularioDocumento(this::_guardar, this::_cancelarFormulario);
+        _formulario.setEscrituraHabilitada(!_demoExpirada);
+        _vigilanteExpiracion = new Timer(1000, e -> _actualizarEstadoDemo());
+        _vigilanteExpiracion.setRepeats(true);
 
         _configurarPanel();
         _mostrarCatalogo("");
@@ -84,6 +108,51 @@ public class PanelDocumentos extends JPanel {
         boton.addActionListener(e -> accion.run());
 
         return boton;
+    }
+
+    private JButton _botonEscritura(String texto, Runnable accion) {
+        JButton boton = _boton(texto, () -> {
+            if (_puedeEscribir()) {
+                accion.run();
+            }
+        });
+        _accionesEscritura.add(boton);
+        boton.setEnabled(!_demoExpirada);
+
+        return boton;
+    }
+
+    private boolean _puedeEscribir() {
+        _actualizarEstadoDemo();
+        return !_demoExpirada;
+    }
+
+    private void _actualizarEstadoDemo() {
+        if (!_demoExpirada && _periodoDemo.estaExpirada()) {
+            _demoExpirada = true;
+            _accionesEscritura.forEach(boton -> boton.setEnabled(false));
+            _formulario.setEscrituraHabilitada(false);
+            _mostrarCatalogo("");
+        }
+
+        if (_demoExpirada) {
+            _notificarExpiracion();
+        }
+    }
+
+    private void _notificarExpiracion() {
+        if (_avisoExpiracionMostrado || !isShowing()) {
+            return;
+        }
+
+        _avisoExpiracionMostrado = true;
+        JOptionPane.showMessageDialog(
+            this,
+            "El período de prueba de 30 minutos finalizó. Podés seguir "
+                + "consultando el catálogo, pero no crear, editar ni eliminar documentos.",
+            "Demo expirada",
+            JOptionPane.INFORMATION_MESSAGE
+        );
     }
 
     private boolean _confirmarEliminacion(Documento documento) {
@@ -130,8 +199,17 @@ public class PanelDocumentos extends JPanel {
         cabecera.setOpaque(false);
         cabecera.add(Interfaz.titulo("Catálogo"), BorderLayout.WEST);
 
-        JButton crear = _boton("Nuevo documento", () -> _abrirFormulario(null));
+        JButton crear = _botonEscritura("Nuevo documento", () -> _abrirFormulario(null));
         crear.setEnabled(resultado.getEstado() == EstadoCargaCatalogo.CARGADO);
+        
+        if (_demoExpirada) {
+            crear.setEnabled(false);
+            cabecera.add(
+                Interfaz.subtitulo("Demo expirada: solo podés consultar el catálogo."),
+                BorderLayout.CENTER
+            );
+        }
+
         JPanel acciones = new JPanel();
         acciones.setOpaque(false);
         acciones.add(crear);
@@ -255,8 +333,8 @@ public class PanelDocumentos extends JPanel {
 
         acciones.setOpaque(false);
         acciones.add(_boton("Volver al catálogo", () -> _mostrarCatalogo("")));
-        acciones.add(_boton("Editar", () -> _abrirFormulario(id)));
-        acciones.add(_boton("Eliminar", () -> _eliminar(id)));
+        acciones.add(_botonEscritura("Editar", () -> _abrirFormulario(id)));
+        acciones.add(_botonEscritura("Eliminar", () -> _eliminar(id)));
 
         return acciones;
     }
@@ -311,6 +389,10 @@ public class PanelDocumentos extends JPanel {
     }
 
     private void _guardar(FormularioDocumento formulario) {
+        if (!_puedeEscribir()) {
+            return;
+        }
+
         try {
             Documento guardado = _guardarDocumento(formulario);
             _mostrarDetalle(guardado.getId(), "Documento guardado correctamente.");
@@ -337,6 +419,10 @@ public class PanelDocumentos extends JPanel {
     }
 
     private void _eliminar(UUID id) {
+        if (!_puedeEscribir()) {
+            return;
+        }
+
         try {
             Documento documento = _servicio.consultar(id);
             if (!_confirmarEliminacion.test(documento)) {
@@ -348,5 +434,19 @@ public class PanelDocumentos extends JPanel {
         } catch (ServicioDocumentoExcepcion e) {
             _mensaje(e.getMessage(), true);
         }
+    }
+
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        _vigilanteExpiracion.start();
+        _actualizarEstadoDemo();
+        _notificarExpiracion();
+    }
+
+    @Override
+    public void removeNotify() {
+        _vigilanteExpiracion.stop();
+        super.removeNotify();
     }
 }
