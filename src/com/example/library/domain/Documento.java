@@ -15,14 +15,13 @@ public class Documento implements Serializable {
   private Integer _paginas;
 
   public Documento(
-    UUID id,
-    TipoDocumento tipo,
-    String titulo,
-    String descripcion,
-    String genero,
-    Integer valoracion,
-    Integer paginas
-  ) {
+      UUID id,
+      TipoDocumento tipo,
+      String titulo,
+      String descripcion,
+      String genero,
+      Integer valoracion,
+      Integer paginas) {
     this._id = ValidadorDocumento.validarId(id);
     this._tipo = ValidadorDocumento.validarTipo(tipo);
     this._titulo = ValidadorDocumento.validarTitulo(titulo);
@@ -33,41 +32,23 @@ public class Documento implements Serializable {
   }
 
   public static Documento nuevo(
-    TipoDocumento tipo,
-    String titulo,
-    String descripcion,
-    String genero,
-    Integer valoracion,
-    Integer paginas
-  ) {
-    return new Documento(
-      UUID.randomUUID(),
-      tipo,
-      titulo,
-      descripcion,
-      genero,
-      valoracion,
-      paginas
-    );
+      TipoDocumento tipo,
+      String titulo,
+      String descripcion,
+      String genero,
+      Integer valoracion,
+      Integer paginas) {
+    return new Documento(UUID.randomUUID(), tipo, titulo, descripcion, genero, valoracion, paginas);
   }
 
   public Documento actualizar(
-    TipoDocumento tipo,
-    String titulo,
-    String descripcion,
-    String genero,
-    Integer valoracion,
-    Integer paginas
-  ) {
-    return new Documento(
-      this._id,
-      tipo,
-      titulo,
-      descripcion,
-      genero,
-      valoracion,
-      paginas
-    );
+      TipoDocumento tipo,
+      String titulo,
+      String descripcion,
+      String genero,
+      Integer valoracion,
+      Integer paginas) {
+    return new Documento(this._id, tipo, titulo, descripcion, genero, valoracion, paginas);
   }
 
   public UUID getId() {
