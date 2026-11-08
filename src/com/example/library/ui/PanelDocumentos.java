@@ -85,7 +85,7 @@ public class PanelDocumentos extends JPanel {
 
     private void _configurarPanel() {
         setLayout(new BorderLayout(0, 12));
-        setBackground(TemaGrafico.CREMA);
+        setOpaque(false);
         setBorder(BorderFactory.createEmptyBorder(20, 24, 20, 24));
 
         _detalle.setOpaque(false);
