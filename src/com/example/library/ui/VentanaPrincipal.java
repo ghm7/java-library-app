@@ -65,13 +65,13 @@ public class VentanaPrincipal extends JFrame {
 
     barra.add(_crearBusqueda());
     barra.add(new BotonCapsula("Todos", TemaGrafico.CORAL_CLARO));
-    barra.add(new BotonCapsula("Ciencia ficción", new Color(0xFCE9D9)));
-    barra.add(new BotonCapsula("Fantasía", new Color(0xEFE5F2)));
-    barra.add(new BotonCapsula("Ficción histórica", new Color(0xF7E9D6)));
-    barra.add(new BotonCapsula("Misterio", new Color(0xEAE2F1)));
-    barra.add(new BotonCapsula("Romance", new Color(0xF9E4E0)));
-    barra.add(new BotonCapsula("Suspense", new Color(0xE5EDE4)));
-    barra.add(new BotonCapsula("Terror", new Color(0xEADFE4)));
+    barra.add(new BotonCapsula("Ciencia ficción", TemaGrafico.CORAL_CLARO));
+    barra.add(new BotonCapsula("Fantasía", TemaGrafico.CORAL_CLARO));
+    barra.add(new BotonCapsula("Ficción histórica", TemaGrafico.CORAL_CLARO));
+    barra.add(new BotonCapsula("Misterio", TemaGrafico.CORAL_CLARO));
+    barra.add(new BotonCapsula("Romance", TemaGrafico.CORAL_CLARO));
+    barra.add(new BotonCapsula("Suspense", TemaGrafico.CORAL_CLARO));
+    barra.add(new BotonCapsula("Terror", TemaGrafico.CORAL_CLARO));
 
     return barra;
   }
