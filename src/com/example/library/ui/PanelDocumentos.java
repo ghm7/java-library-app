@@ -10,10 +10,15 @@ import com.example.library.service.ServicioDocumentoExcepcion;
 import com.example.library.service.ServicioPeriodoDemo;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.LayoutManager;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -24,13 +29,17 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.Scrollable;
 import javax.swing.Timer;
 
-/** Presentación y acciones Swing; todo acceso a datos pasa por el servicio. */
 public class PanelDocumentos extends JPanel {
   private static final String CATALOGO = "catalogo";
   private static final String DETALLE = "detalle";
   private static final String FORMULARIO = "formulario";
+  private static final int ANCHO_TARJETA_CATALOGO = 120;
+  private static final int ALTO_TARJETA_CATALOGO = 180;
+  private static final int ESPACIO_HORIZONTAL_TARJETAS = 8;
+  private static final int ESPACIO_VERTICAL_TARJETAS = 32;
 
   private final ServicioDocumento _servicio;
   private final ServicioCargaCatalogo _carga;
@@ -244,18 +253,17 @@ public class PanelDocumentos extends JPanel {
   }
 
   private JScrollPane _crearListaDocumentos(List<Documento> documentos) {
-    JPanel tarjetas = new JPanel(new GridLayout(0, 1, 0, 12));
+    JPanel tarjetas =
+        new PanelEnvolvente(
+            new LayoutEnvolvente(
+                FlowLayout.LEFT, ESPACIO_HORIZONTAL_TARJETAS, ESPACIO_VERTICAL_TARJETAS));
     tarjetas.setOpaque(false);
 
     for (Documento documento : documentos) {
       tarjetas.add(_crearTarjetaDocumento(documento));
     }
 
-    JPanel lista = new JPanel(new BorderLayout());
-    lista.setOpaque(false);
-    lista.add(tarjetas, BorderLayout.NORTH);
-
-    JScrollPane scroll = new JScrollPane(lista);
+    JScrollPane scroll = new JScrollPane(tarjetas);
     scroll.getVerticalScrollBar().setUnitIncrement(20);
     scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
@@ -272,8 +280,104 @@ public class PanelDocumentos extends JPanel {
     tarjeta.add(titulo, BorderLayout.CENTER);
     tarjeta.add(
         _boton("Ver detalle", () -> _mostrarDetalle(documento.getId(), "")), BorderLayout.EAST);
+    tarjeta.setPreferredSize(new Dimension(ANCHO_TARJETA_CATALOGO, ALTO_TARJETA_CATALOGO));
 
     return tarjeta;
+  }
+
+  private static class LayoutEnvolvente extends FlowLayout {
+    LayoutEnvolvente(int alineacion, int espacioHorizontal, int espacioVertical) {
+      super(alineacion, espacioHorizontal, espacioVertical);
+    }
+
+    @Override
+    public Dimension preferredLayoutSize(Container contenedor) {
+      return _tamanoLayout(contenedor, true);
+    }
+
+    @Override
+    public Dimension minimumLayoutSize(Container contenedor) {
+      return _tamanoLayout(contenedor, false);
+    }
+
+    private Dimension _tamanoLayout(Container contenedor, boolean preferido) {
+      synchronized (contenedor.getTreeLock()) {
+        int anchoContenedor = contenedor.getWidth();
+        if (anchoContenedor == 0) {
+          anchoContenedor = Integer.MAX_VALUE;
+        }
+
+        Insets margenes = contenedor.getInsets();
+        int anchoFila = anchoContenedor - margenes.left - margenes.right - getHgap() * 2;
+        int anchoActual = 0;
+        int altoActual = 0;
+        int altoTotal = 0;
+
+        for (int indice = 0; indice < contenedor.getComponentCount(); indice++) {
+          java.awt.Component componente = contenedor.getComponent(indice);
+          if (!componente.isVisible()) {
+            continue;
+          }
+
+          Dimension tamano =
+              preferido ? componente.getPreferredSize() : componente.getMinimumSize();
+          if (anchoActual > 0 && anchoActual + getHgap() + tamano.width > anchoFila) {
+            altoTotal += altoActual + getVgap();
+            anchoActual = 0;
+            altoActual = 0;
+          }
+
+          anchoActual += (anchoActual == 0 ? 0 : getHgap()) + tamano.width;
+          altoActual = Math.max(altoActual, tamano.height);
+        }
+
+        if (altoActual > 0) {
+          altoTotal += altoActual;
+        }
+
+        return new Dimension(0, altoTotal + margenes.top + margenes.bottom + getVgap() * 2);
+      }
+    }
+  }
+
+  private static final class PanelEnvolvente extends JPanel implements Scrollable {
+    PanelEnvolvente(LayoutManager layout) {
+      super(layout);
+      addComponentListener(
+          new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent evento) {
+              revalidate();
+            }
+          });
+    }
+
+    @Override
+    public Dimension getPreferredScrollableViewportSize() {
+      return getPreferredSize();
+    }
+
+    @Override
+    public int getScrollableUnitIncrement(
+        java.awt.Rectangle rectanguloVisible, int orientacion, int direccion) {
+      return 20;
+    }
+
+    @Override
+    public int getScrollableBlockIncrement(
+        java.awt.Rectangle rectanguloVisible, int orientacion, int direccion) {
+      return rectanguloVisible.height;
+    }
+
+    @Override
+    public boolean getScrollableTracksViewportWidth() {
+      return true;
+    }
+
+    @Override
+    public boolean getScrollableTracksViewportHeight() {
+      return false;
+    }
   }
 
   private void _mostrarTarjeta(String nombre) {
