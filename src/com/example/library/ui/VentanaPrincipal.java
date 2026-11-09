@@ -6,6 +6,8 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -85,15 +87,93 @@ public class VentanaPrincipal extends JFrame {
     icono.setForeground(TemaGrafico.TEXTO_SECUNDARIO);
     contenedor.add(icono, BorderLayout.WEST);
 
-    JTextField busqueda = new JTextField("Buscar libros, autores o una nueva aventura...");
+    JTextField busqueda = new CampoTextoConElipsis("Buscar libros, autores o una nueva aventura.");
     busqueda.setName("busqueda");
     busqueda.setFont(TemaGrafico.SUBTITULO);
     busqueda.setForeground(TemaGrafico.TEXTO_SECUNDARIO);
-    busqueda.setOpaque(false);
+    busqueda.setBackground(TemaGrafico.MARFIL);
     busqueda.setBorder(BorderFactory.createEmptyBorder());
     busqueda.setCaretColor(TemaGrafico.TEXTO_SECUNDARIO);
     contenedor.add(busqueda, BorderLayout.CENTER);
     return contenedor;
+  }
+
+  private static class CampoTextoConElipsis extends JTextField {
+    private static final String ELIPSIS = "...";
+    private final String marcador;
+
+    CampoTextoConElipsis(String marcador) {
+      this.marcador = marcador;
+    }
+
+    @Override
+    protected void paintComponent(Graphics graficos) {
+      super.paintComponent(graficos);
+
+      String texto = getText();
+      boolean muestraMarcador = texto.isEmpty();
+
+      if (hasFocus() && !muestraMarcador) {
+        return;
+      }
+
+      Insets margenes = getInsets();
+      int anchoDisponible = getWidth() - margenes.left - margenes.right;
+      FontMetrics metricas = getFontMetrics(getFont());
+      String textoOriginal = muestraMarcador ? marcador : texto;
+      String textoVisible = _conElipsis(textoOriginal, metricas, anchoDisponible);
+
+      if (!muestraMarcador && textoVisible.equals(textoOriginal)) {
+        return;
+      }
+
+      Graphics copia = graficos.create();
+
+      try {
+        copia.setColor(getBackground());
+        copia.fillRect(
+            margenes.left,
+            margenes.top,
+            Math.max(0, anchoDisponible),
+            Math.max(0, getHeight() - margenes.top - margenes.bottom));
+        copia.setColor(getForeground());
+        int altoDisponible = getHeight() - margenes.top - margenes.bottom;
+        int lineaBase =
+            margenes.top
+                + Math.max(0, (altoDisponible - metricas.getHeight()) / 2)
+                + metricas.getAscent();
+        copia.drawString(textoVisible, margenes.left, lineaBase);
+
+        if (muestraMarcador && hasFocus()) {
+          getCaret().paint(copia);
+        }
+
+      } finally {
+        copia.dispose();
+      }
+    }
+
+    private String _conElipsis(String texto, FontMetrics metricas, int anchoDisponible) {
+      if (metricas.stringWidth(texto) <= anchoDisponible) {
+        return texto;
+      }
+      if (metricas.stringWidth(ELIPSIS) > anchoDisponible) {
+        return "";
+      }
+
+      StringBuilder resultado = new StringBuilder();
+      for (int indice = 0; indice < texto.length(); ) {
+        int puntoCodigo = texto.codePointAt(indice);
+        String siguiente =
+            resultado.toString() + new String(Character.toChars(puntoCodigo)) + ELIPSIS;
+        if (metricas.stringWidth(siguiente) > anchoDisponible) {
+          break;
+        }
+        resultado.appendCodePoint(puntoCodigo);
+        indice += Character.charCount(puntoCodigo);
+      }
+      return resultado + ELIPSIS;
+    }
   }
 
   private JPanel _crearBarraLateral() {
