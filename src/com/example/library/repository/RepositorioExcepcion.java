@@ -50,7 +50,7 @@ public class RepositorioExcepcion extends RuntimeException {
   public static RepositorioExcepcion catalogoNoEncontrado(Path ruta) {
     return new RepositorioExcepcion(
       "No se encontró el catálogo: " + ruta
-        + ". Restaure un catálogo válido antes de continuar.",
+        + ". Podés crear el primer documento para inicializarlo.",
       null,
       true
     );

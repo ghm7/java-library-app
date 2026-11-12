@@ -36,6 +36,12 @@ public class ServicioCargaCatalogo {
         List.of(),
         e.getMessage()
       );
+    } catch (RuntimeException e) {
+      return new ResultadoCargaCatalogo(
+        EstadoCargaCatalogo.INVALIDO,
+        List.of(),
+        "No se pudo cargar el catálogo de documentos. No se realizaron cambios."
+      );
     }
   }
 
