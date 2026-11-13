@@ -1,24 +1,21 @@
 package com.example.library.service;
 
-import java.util.ArrayList;
-import java.util.UUID;
-
 import com.example.library.domain.Documento;
 import com.example.library.domain.TipoDocumento;
 import com.example.library.domain.ValidadorDocumento;
 import com.example.library.repository.RepositorioDocumentoBinario;
 import com.example.library.repository.RepositorioExcepcion;
+import java.util.ArrayList;
+import java.util.UUID;
 
 public class ServicioDocumento {
-  private RepositorioDocumentoBinario _repositorio;
+  private final RepositorioDocumentoBinario _repositorio;
 
   public ServicioDocumento() {
     this(new RepositorioDocumentoBinario());
   }
 
-  public ServicioDocumento(
-    RepositorioDocumentoBinario repositorio
-  ) {
+  public ServicioDocumento(RepositorioDocumentoBinario repositorio) {
     if (repositorio == null) {
       throw ServicioDocumentoExcepcion.repositorioObligatorio();
     }
@@ -30,7 +27,7 @@ public class ServicioDocumento {
     try {
       return this._repositorio.leerTodos();
     } catch (RepositorioExcepcion e) {
-      throw ServicioDocumentoExcepcion.errorAlConsultar(e);
+      throw ServicioDocumentoExcepcion.errorAlListar(e);
     }
   }
 
@@ -44,21 +41,13 @@ public class ServicioDocumento {
   }
 
   public Documento crear(
-    TipoDocumento tipo,
-    String titulo,
-    String descripcion,
-    String genero,
-    Integer valoracion,
-    Integer paginas
-  ) {
-    Documento documento = Documento.nuevo(
-      tipo,
-      titulo,
-      descripcion, 
-      genero, 
-      valoracion, 
-      paginas
-    );
+      TipoDocumento tipo,
+      String titulo,
+      String descripcion,
+      String genero,
+      Integer valoracion,
+      Integer paginas) {
+    Documento documento = Documento.nuevo(tipo, titulo, descripcion, genero, valoracion, paginas);
 
     try {
       this._repositorio.crear(documento);
@@ -69,23 +58,14 @@ public class ServicioDocumento {
   }
 
   public Documento actualizar(
-    UUID id,
-    TipoDocumento tipo,
-    String titulo,
-    String descripcion,
-    String genero,
-    Integer valoracion,
-    Integer paginas
-  ) {
-    Documento documento = new Documento(
-      id,
-      tipo,
-      titulo,
-      descripcion,
-      genero,
-      valoracion,
-      paginas
-    );
+      UUID id,
+      TipoDocumento tipo,
+      String titulo,
+      String descripcion,
+      String genero,
+      Integer valoracion,
+      Integer paginas) {
+    Documento documento = new Documento(id, tipo, titulo, descripcion, genero, valoracion, paginas);
 
     try {
       this._repositorio.actualizar(documento);
