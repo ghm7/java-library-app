@@ -1,6 +1,7 @@
 package com.example.library.ui;
 
 import com.example.library.domain.Documento;
+import com.example.library.domain.TipoDocumento;
 import com.example.library.domain.ValidarExcepcion;
 import com.example.library.service.EstadoCargaCatalogo;
 import com.example.library.service.ResultadoCargaCatalogo;
@@ -10,16 +11,16 @@ import com.example.library.service.ServicioDocumentoExcepcion;
 import com.example.library.service.ServicioPeriodoDemo;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
-import java.awt.GridBagConstraints;
+import java.awt.FlowLayout;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
-import java.awt.Insets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Predicate;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -35,9 +36,9 @@ public class PanelDocumentos extends JPanel {
   private final ServicioDocumento _servicio;
   private final ServicioCargaCatalogo _carga;
   private final CardLayout _cards = new CardLayout();
-  private final JPanel _contenido = new JPanel(_cards);
-  private final JPanel _catalogo = new JPanel(new BorderLayout(0, 12));
-  private final JPanel _detalle = new JPanel(new BorderLayout(0, 12));
+  private final JPanel _contenido = Interfaz.panel(_cards);
+  private final JPanel _catalogo = Interfaz.panel(new BorderLayout(0, 12));
+  private final JPanel _detalle = Interfaz.panel(new BorderLayout(0, 12));
   private final FormularioDocumento _formulario;
   private final JTextArea _mensaje = Interfaz.texto("");
   private final Predicate<Documento> _confirmarEliminacion;
@@ -75,7 +76,6 @@ public class PanelDocumentos extends JPanel {
     _formulario = new FormularioDocumento(this::_guardar, this::_cancelarFormulario);
     _formulario.setEscrituraHabilitada(!_demoExpirada);
     _vigilanteExpiracion = new Timer(1000, e -> _actualizarEstadoDemo());
-    _vigilanteExpiracion.setRepeats(true);
 
     _configurarPanel();
     _mostrarCatalogo("");
@@ -86,10 +86,6 @@ public class PanelDocumentos extends JPanel {
     setBackground(TemaGrafico.CREMA);
     setBorder(BorderFactory.createEmptyBorder(20, 24, 20, 24));
 
-    _detalle.setOpaque(false);
-    _catalogo.setOpaque(false);
-
-    _contenido.setOpaque(false);
     _contenido.add(_catalogo, CATALOGO);
     _contenido.add(_detalle, DETALLE);
     _contenido.add(_formulario, FORMULARIO);
@@ -206,25 +202,19 @@ public class PanelDocumentos extends JPanel {
   }
 
   private JPanel _crearCabeceraCatalogo(ResultadoCargaCatalogo resultado) {
-    JPanel cabecera = new JPanel(new BorderLayout(12, 0));
-    cabecera.setOpaque(false);
+    JPanel cabecera = Interfaz.panel(new BorderLayout(12, 0));
     cabecera.add(Interfaz.titulo("Catálogo"), BorderLayout.WEST);
 
     JButton crear = _botonEscritura("Nuevo documento", () -> _abrirFormulario(null));
-    crear.setEnabled(
-        !_demoExpirada
-            && (resultado.getEstado() == EstadoCargaCatalogo.CARGADO
-                || resultado.getEstado() == EstadoCargaCatalogo.AUSENTE));
+    crear.setEnabled(!_demoExpirada && resultado.getEstado() != EstadoCargaCatalogo.INVALIDO);
 
     if (_demoExpirada) {
-      crear.setEnabled(false);
       cabecera.add(
           Interfaz.subtitulo("Demo expirada: solo podés consultar el catálogo."),
           BorderLayout.CENTER);
     }
 
-    JPanel acciones = new JPanel();
-    acciones.setOpaque(false);
+    JPanel acciones = Interfaz.panel(new FlowLayout());
     acciones.add(crear);
     acciones.add(_boton("Actualizar catálogo", () -> _mostrarCatalogo("")));
     cabecera.add(acciones, BorderLayout.EAST);
@@ -244,31 +234,23 @@ public class PanelDocumentos extends JPanel {
   private void _mostrarCatalogoCargado(ResultadoCargaCatalogo resultado, String aviso) {
     List<Documento> documentos = resultado.getDocumentos();
 
-    if (documentos.isEmpty()) {
-      _catalogo.add(
-          Interfaz.texto(
-              "El catálogo está vacío. Agregá el primer documento con «Nuevo documento»."),
-          BorderLayout.CENTER);
-    } else {
-      _catalogo.add(_crearListaDocumentos(documentos), BorderLayout.CENTER);
-    }
-
+    JComponent contenido =
+        documentos.isEmpty()
+            ? Interfaz.texto(
+                "El catálogo está vacío. Agregá el primer documento con «Nuevo documento».")
+            : _crearListaDocumentos(documentos);
+    _catalogo.add(contenido, BorderLayout.CENTER);
     _mensaje(aviso.isEmpty() ? resultado.getMensaje() : aviso, false);
   }
 
   private JScrollPane _crearListaDocumentos(List<Documento> documentos) {
-    JPanel tarjetas = new JPanel(new GridLayout(0, 1, 0, 12));
-    tarjetas.setOpaque(false);
+    JPanel tarjetas = Interfaz.panel(new GridLayout(0, 1, 0, 12));
 
     for (Documento documento : documentos) {
       tarjetas.add(_crearTarjetaDocumento(documento));
     }
 
-    JPanel lista = new JPanel(new BorderLayout());
-    lista.setOpaque(false);
-    lista.add(tarjetas, BorderLayout.NORTH);
-
-    JScrollPane scroll = new JScrollPane(lista);
+    JScrollPane scroll = Interfaz.conDesplazamiento(tarjetas);
     scroll.getVerticalScrollBar().setUnitIncrement(20);
     scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
@@ -323,27 +305,21 @@ public class PanelDocumentos extends JPanel {
     JPanel campos = Interfaz.superficie();
 
     campos.setLayout(new GridBagLayout());
-    _agregarDetalle(campos, "Tipo", Interfaz.nombreTipo(documento.getTipo()));
-    _agregarDetalle(campos, "Título", documento.getTitulo());
-    _agregarDetalle(campos, "Descripción", documento.getDescripcion());
-    _agregarDetalle(campos, "Género", documento.getGenero());
-    _agregarDetalle(campos, "Valoración", documento.getValoracion());
-    _agregarDetalle(campos, "Páginas", documento.getPaginas());
+    _agregarDetalle(campos, "Tipo", Interfaz.nombreTipo(documento.getTipo()), 1);
+    _agregarDetalle(campos, "Título", documento.getTitulo(), 2);
+    _agregarDetalle(campos, "Descripción", documento.getDescripcion(), 5);
+    _agregarDetalle(campos, "Género", documento.getGenero(), 1);
+    _agregarDetalle(campos, "Valoración", documento.getValoracion(), 1);
+    _agregarDetalle(campos, "Páginas", documento.getPaginas(), 1);
 
-    JPanel cuerpo = new JPanel(new BorderLayout());
-    cuerpo.setOpaque(false);
-    cuerpo.add(campos, BorderLayout.NORTH);
-
-    JScrollPane scroll = new JScrollPane(cuerpo);
+    JScrollPane scroll = Interfaz.conDesplazamiento(campos);
     scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
     return scroll;
   }
 
   private JPanel _crearAccionesDetalle(UUID id) {
-    JPanel acciones = new JPanel();
-
-    acciones.setOpaque(false);
+    JPanel acciones = Interfaz.panel(new FlowLayout());
     acciones.add(_boton("Volver al catálogo", () -> _mostrarCatalogo("")));
     acciones.add(_botonEscritura("Editar", () -> _abrirFormulario(id)));
     acciones.add(_botonEscritura("Eliminar", () -> _eliminar(id)));
@@ -351,35 +327,16 @@ public class PanelDocumentos extends JPanel {
     return acciones;
   }
 
-  private void _agregarDetalle(JPanel campos, String nombre, Object valor) {
-    GridBagConstraints posicion = new GridBagConstraints();
-
-    posicion.gridy = campos.getComponentCount() / 2;
-    posicion.anchor = GridBagConstraints.NORTHWEST;
-    posicion.insets = new Insets(6, 8, 6, 8);
-
-    campos.add(Interfaz.subtitulo(nombre), posicion);
-
+  private void _agregarDetalle(JPanel campos, String nombre, Object valor, int filas) {
     JTextArea texto = Interfaz.texto(valor == null ? "Sin especificar" : valor.toString());
     texto.getAccessibleContext().setAccessibleName(nombre);
 
-    int filas =
-        switch (nombre) {
-          case "Descripción" -> 5;
-          case "Título" -> 2;
-          default -> 1;
-        };
-
     texto.setRows(filas);
-
-    posicion.gridx = 1;
-    posicion.weightx = 1;
-    posicion.fill = GridBagConstraints.HORIZONTAL;
 
     JScrollPane scroll = new JScrollPane(texto);
     scroll.setBorder(BorderFactory.createEmptyBorder());
 
-    campos.add(scroll, posicion);
+    Interfaz.agregarFila(campos, Interfaz.subtitulo(nombre), scroll);
   }
 
   private void _abrirFormulario(UUID id) {
@@ -419,24 +376,16 @@ public class PanelDocumentos extends JPanel {
   }
 
   private Documento _guardarDocumento(FormularioDocumento formulario) {
-    if (formulario.getId() == null) {
-      return _servicio.crear(
-          formulario.getTipo(),
-          formulario.getTitulo(),
-          formulario.getDescripcion(),
-          formulario.getGenero(),
-          formulario.getValoracion(),
-          formulario.getPaginas());
-    }
-
-    return _servicio.actualizar(
-        formulario.getId(),
-        formulario.getTipo(),
-        formulario.getTitulo(),
-        formulario.getDescripcion(),
-        formulario.getGenero(),
-        formulario.getValoracion(),
-        formulario.getPaginas());
+    UUID id = formulario.getId();
+    TipoDocumento tipo = formulario.getTipo();
+    String titulo = formulario.getTitulo();
+    String descripcion = formulario.getDescripcion();
+    String genero = formulario.getGenero();
+    Integer valoracion = formulario.getValoracion();
+    Integer paginas = formulario.getPaginas();
+    return id == null
+        ? _servicio.crear(tipo, titulo, descripcion, genero, valoracion, paginas)
+        : _servicio.actualizar(id, tipo, titulo, descripcion, genero, valoracion, paginas);
   }
 
   private void _eliminar(UUID id) {
@@ -465,7 +414,6 @@ public class PanelDocumentos extends JPanel {
     super.addNotify();
     _vigilanteExpiracion.start();
     _actualizarEstadoDemo();
-    _notificarExpiracion();
   }
 
   @Override

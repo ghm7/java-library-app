@@ -30,58 +30,40 @@ public class ValidadorDocumento {
   }
 
   public static String textoOpcional(String texto) {
-    if (texto == null || texto.isBlank()) {
-      return null;
-    }
-
-    return texto;
+    return texto == null || texto.isBlank() ? null : texto;
   }
 
   public static Integer validarValoracion(Integer valoracion) {
-    if (valoracion == null) {
-      return null;
-    }
-
-    if (valoracion < 1 || valoracion > 5) {
-      throw new ValidarExcepcion("La valoración debe estar entre 1 y 5");
-    }
-
-    return valoracion;
-  }
-
-  public static Integer parsearValoracion(String valoracion) {
-    if (valoracion == null || valoracion.isBlank()) {
-      return null;
-    }
-
-    try {
-      return validarValoracion(Integer.valueOf(valoracion.trim()));
-    } catch (NumberFormatException e) {
-      throw new ValidarExcepcion("La valoración debe ser un numero entero.");
-    }
+    return validarRango(valoracion, 5, "La valoración debe estar entre 1 y 5");
   }
 
   public static Integer validarPaginas(Integer paginas) {
-    if (paginas == null) {
-      return null;
-    }
-
-    if (paginas < 1 || paginas > 999) {
-      throw new ValidarExcepcion("La cantidad de páginas debe estar entre 1 y 999.");
-    }
-
-    return paginas;
+    return validarRango(paginas, 999, "La cantidad de páginas debe estar entre 1 y 999.");
   }
 
-  public static Integer parsearPaginas(String paginas) {
-    if (paginas == null || paginas.isBlank()) {
+  private static Integer validarRango(Integer valor, int maximo, String mensaje) {
+    if (valor != null && (valor < 1 || valor > maximo)) {
+      throw new ValidarExcepcion(mensaje);
+    }
+    return valor;
+  }
+
+  public static Integer parsearValoracion(String texto) {
+    return validarValoracion(parsearEntero(texto, "La valoración"));
+  }
+
+  public static Integer parsearPaginas(String texto) {
+    return validarPaginas(parsearEntero(texto, "La cantidad de páginas"));
+  }
+
+  private static Integer parsearEntero(String texto, String campo) {
+    if (textoOpcional(texto) == null) {
       return null;
     }
-
     try {
-      return validarPaginas(Integer.valueOf(paginas.trim()));
+      return Integer.valueOf(texto.trim());
     } catch (NumberFormatException e) {
-      throw new ValidarExcepcion("La cantidad de páginas debe ser un numero entero.");
+      throw new ValidarExcepcion(campo + " debe ser un numero entero.");
     }
   }
 }

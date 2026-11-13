@@ -5,11 +5,6 @@ import java.util.UUID;
 
 public class RepositorioExcepcion extends RuntimeException {
   private final boolean _catalogoAusente;
-  private static final String _MENSAJE_RUTA_OBLIGATORIA = "La ruta del catálogo es obligatoria.";
-
-  private static final String _MENSAJE_DOCUMENTO_OBLIGATORIO = "El documento es obligatorio.";
-
-  private static final String _MENSAJE_ID_OBLIGATORIO = "El id es obligatorio.";
 
   public RepositorioExcepcion(String mensaje) {
     this(mensaje, null, false);
@@ -29,15 +24,15 @@ public class RepositorioExcepcion extends RuntimeException {
   }
 
   public static RepositorioExcepcion rutaObligatoria() {
-    return new RepositorioExcepcion(_MENSAJE_RUTA_OBLIGATORIA);
+    return new RepositorioExcepcion("La ruta del catálogo es obligatoria.");
   }
 
   public static RepositorioExcepcion documentoObligatorio() {
-    return new RepositorioExcepcion(_MENSAJE_DOCUMENTO_OBLIGATORIO);
+    return new RepositorioExcepcion("El documento es obligatorio.");
   }
 
   public static RepositorioExcepcion idObligatorio() {
-    return new RepositorioExcepcion(_MENSAJE_ID_OBLIGATORIO);
+    return new RepositorioExcepcion("El id es obligatorio.");
   }
 
   public static RepositorioExcepcion catalogoNoEncontrado(Path ruta) {
@@ -61,47 +56,35 @@ public class RepositorioExcepcion extends RuntimeException {
   }
 
   public static RepositorioExcepcion catalogoCorrupto(Path ruta, Throwable causa) {
-    return new RepositorioExcepcion(
-        "El catálogo está corrupto o incompleto: " + ruta + ". No se realizaron cambios.", causa);
+    return catalogoInvalido("El catálogo está corrupto o incompleto", ruta, causa);
   }
 
   public static RepositorioExcepcion catalogoIncompatible(Path ruta, Throwable causa) {
-    return new RepositorioExcepcion(
-        "El catálogo fue creado con un formato o una versión incompatible: "
-            + ruta
-            + ". No se realizaron cambios.",
-        causa);
+    return catalogoInvalido(
+        "El catálogo fue creado con un formato o una versión incompatible", ruta, causa);
   }
 
   public static RepositorioExcepcion catalogoConFormatoInvalido(Path ruta) {
-    return new RepositorioExcepcion(
-        "El catálogo no contiene una lista de documentos válida: "
-            + ruta
-            + ". No se realizaron cambios.");
+    return catalogoInvalido("El catálogo no contiene una lista de documentos válida", ruta, null);
   }
 
   public static RepositorioExcepcion elementoInvalido(Path ruta, int posicion) {
-    return new RepositorioExcepcion(
-        "El elemento "
-            + posicion
-            + " del catálogo no es un Documento válido: "
-            + ruta
-            + ". No se realizaron cambios.");
+    return catalogoInvalido(
+        "El elemento " + posicion + " del catálogo no es un Documento válido", ruta, null);
   }
 
   public static RepositorioExcepcion documentoInvalido(Path ruta, int posicion, Throwable causa) {
-    return new RepositorioExcepcion(
-        "El documento "
-            + posicion
-            + " del catálogo tiene campos inválidos: "
-            + ruta
-            + ". No se realizaron cambios.",
-        causa);
+    return catalogoInvalido(
+        "El documento " + posicion + " del catálogo tiene campos inválidos", ruta, causa);
   }
 
   public static RepositorioExcepcion idDuplicadoEnCatalogo(Path ruta, UUID id) {
-    return new RepositorioExcepcion(
-        "El catálogo contiene el id duplicado " + id + ": " + ruta + ". No se realizaron cambios.");
+    return catalogoInvalido("El catálogo contiene el id duplicado " + id, ruta, null);
+  }
+
+  private static RepositorioExcepcion catalogoInvalido(
+      String problema, Path ruta, Throwable causa) {
+    return new RepositorioExcepcion(problema + ": " + ruta + ". No se realizaron cambios.", causa);
   }
 
   public static RepositorioExcepcion errorAlLeer(Path ruta, Throwable causa) {

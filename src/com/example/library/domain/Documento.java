@@ -6,13 +6,13 @@ import java.util.UUID;
 public class Documento implements Serializable {
   private static final long serialVersionUID = 1L;
 
-  private UUID _id;
-  private TipoDocumento _tipo;
-  private String _titulo;
-  private String _descripcion;
-  private String _genero;
-  private Integer _valoracion;
-  private Integer _paginas;
+  private final UUID _id;
+  private final TipoDocumento _tipo;
+  private final String _titulo;
+  private final String _descripcion;
+  private final String _genero;
+  private final Integer _valoracion;
+  private final Integer _paginas;
 
   public Documento(
       UUID id,
@@ -49,6 +49,10 @@ public class Documento implements Serializable {
       Integer valoracion,
       Integer paginas) {
     return new Documento(this._id, tipo, titulo, descripcion, genero, valoracion, paginas);
+  }
+
+  public Documento copiaValidada() {
+    return actualizar(_tipo, _titulo, _descripcion, _genero, _valoracion, _paginas);
   }
 
   public UUID getId() {

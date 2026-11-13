@@ -1,34 +1,62 @@
 package com.example.library.ui;
 
 import com.example.library.domain.TipoDocumento;
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.Insets;
+import java.awt.LayoutManager;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
 public class Interfaz {
   private Interfaz() {}
 
-  public static JLabel titulo(String text) {
-    JLabel label = new JLabel(text);
-
-    label.setFont(TemaGrafico.TITULO);
-    label.setForeground(TemaGrafico.GRAFITO);
-
-    return label;
+  public static JLabel titulo(String texto) {
+    return etiqueta(texto, TemaGrafico.TITULO, TemaGrafico.GRAFITO);
   }
 
-  public static JLabel subtitulo(String text) {
-    JLabel label = new JLabel(text);
+  public static JLabel subtitulo(String texto) {
+    return etiqueta(texto, TemaGrafico.SUBTITULO, TemaGrafico.TEXTO_SECUNDARIO);
+  }
 
-    label.setFont(TemaGrafico.SUBTITULO);
-    label.setForeground(TemaGrafico.TEXTO_SECUNDARIO);
+  private static JLabel etiqueta(String texto, Font fuente, Color color) {
+    JLabel etiqueta = new JLabel(texto);
+    etiqueta.setFont(fuente);
+    etiqueta.setForeground(color);
+    return etiqueta;
+  }
 
-    return label;
+  static JPanel panel(LayoutManager layout) {
+    JPanel panel = new JPanel(layout);
+    panel.setOpaque(false);
+    return panel;
+  }
+
+  static JScrollPane conDesplazamiento(JPanel contenido) {
+    JPanel contenedor = panel(new BorderLayout());
+    contenedor.add(contenido, BorderLayout.NORTH);
+    return new JScrollPane(contenedor);
+  }
+
+  static void agregarFila(JPanel campos, JLabel etiqueta, JComponent campo) {
+    GridBagConstraints posicion = new GridBagConstraints();
+    posicion.gridy = campos.getComponentCount() / 2;
+    posicion.anchor = GridBagConstraints.NORTHWEST;
+    posicion.insets = new Insets(6, 8, 6, 8);
+    etiqueta.setLabelFor(campo);
+    campos.add(etiqueta, posicion);
+    posicion.gridx = 1;
+    posicion.weightx = 1;
+    posicion.fill = GridBagConstraints.HORIZONTAL;
+    campos.add(campo, posicion);
   }
 
   public static JButton botonPrimario(String text) {

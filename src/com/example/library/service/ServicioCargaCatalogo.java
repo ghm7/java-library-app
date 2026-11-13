@@ -26,23 +26,16 @@ public class ServicioCargaCatalogo {
 
       return new ResultadoCargaCatalogo(EstadoCargaCatalogo.CARGADO, documentos, mensaje);
     } catch (ServicioDocumentoExcepcion e) {
-      return new ResultadoCargaCatalogo(this._estadoPara(e), List.of(), e.getMessage());
+      boolean ausente =
+          e.getCause() instanceof RepositorioExcepcion causa && causa.esCatalogoAusente();
+      EstadoCargaCatalogo estado =
+          ausente ? EstadoCargaCatalogo.AUSENTE : EstadoCargaCatalogo.INVALIDO;
+      return new ResultadoCargaCatalogo(estado, List.of(), e.getMessage());
     } catch (RuntimeException e) {
       return new ResultadoCargaCatalogo(
           EstadoCargaCatalogo.INVALIDO,
           List.of(),
           "No se pudo cargar el catálogo de documentos. No se realizaron cambios.");
     }
-  }
-
-  private EstadoCargaCatalogo _estadoPara(ServicioDocumentoExcepcion excepcion) {
-    Throwable causa = excepcion.getCause();
-
-    if (causa instanceof RepositorioExcepcion
-        && ((RepositorioExcepcion) causa).esCatalogoAusente()) {
-      return EstadoCargaCatalogo.AUSENTE;
-    }
-
-    return EstadoCargaCatalogo.INVALIDO;
   }
 }

@@ -4,9 +4,9 @@ import com.example.library.domain.Documento;
 import com.example.library.domain.TipoDocumento;
 import com.example.library.domain.ValidadorDocumento;
 import java.awt.BorderLayout;
-import java.awt.GridBagConstraints;
+import java.awt.FlowLayout;
 import java.awt.GridBagLayout;
-import java.awt.Insets;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 import javax.swing.DefaultListCellRenderer;
@@ -56,33 +56,26 @@ public class FormularioDocumento extends JPanel {
   }
 
   private JScrollPane _crearCuerpo() {
-    JPanel campos = new JPanel(new GridBagLayout());
-    campos.setOpaque(false);
+    JPanel campos = Interfaz.panel(new GridBagLayout());
 
-    _agregarCampo(campos, 0, "Tipo *", _tipo, "tipo");
-    _agregarCampo(campos, 1, "Título *", _titulo, "titulo");
-    _agregarCampo(campos, 2, "Descripción", new JScrollPane(_descripcion), "descripcionScroll");
-    _agregarCampo(campos, 3, "Género", _genero, "genero");
-    _agregarCampo(campos, 4, "Valoración (1–5)", _valoracion, "valoracion");
-    _agregarCampo(campos, 5, "Páginas (1–999)", _paginas, "paginas");
+    _agregarCampo(campos, "Tipo *", _tipo, "tipo");
+    _agregarCampo(campos, "Título *", _titulo, "titulo");
+    _agregarCampo(campos, "Descripción", new JScrollPane(_descripcion), "descripcionScroll");
+    _agregarCampo(campos, "Género", _genero, "genero");
+    _agregarCampo(campos, "Valoración (1–5)", _valoracion, "valoracion");
+    _agregarCampo(campos, "Páginas (1–999)", _paginas, "paginas");
 
-    JPanel cuerpo = new JPanel(new BorderLayout(0, 12));
-    cuerpo.setOpaque(false);
+    JPanel cuerpo = Interfaz.panel(new BorderLayout(0, 12));
     cuerpo.add(
         Interfaz.subtitulo("* Obligatorio. Los demás campos pueden quedar vacíos."),
         BorderLayout.NORTH);
     cuerpo.add(campos, BorderLayout.CENTER);
 
-    JPanel contenedor = new JPanel(new BorderLayout());
-    contenedor.setOpaque(false);
-    contenedor.add(cuerpo, BorderLayout.NORTH);
-
-    return new JScrollPane(contenedor);
+    return Interfaz.conDesplazamiento(cuerpo);
   }
 
   private JPanel _crearAcciones(Consumer<FormularioDocumento> guardar, Runnable cancelar) {
-    JPanel acciones = new JPanel();
-    acciones.setOpaque(false);
+    JPanel acciones = Interfaz.panel(new FlowLayout());
 
     _guardarBoton.addActionListener(e -> guardar.accept(this));
     JButton cancelarBoton = new JButton("Cancelar");
@@ -94,47 +87,22 @@ public class FormularioDocumento extends JPanel {
     return acciones;
   }
 
-  private void _agregarCampo(
-      JPanel campos, int fila, String nombre, JComponent campo, String identificador) {
-    GridBagConstraints restricciones = new GridBagConstraints();
-    restricciones.gridy = fila;
-    restricciones.insets = new Insets(6, 8, 6, 8);
-    restricciones.anchor = GridBagConstraints.NORTHWEST;
-    JLabel etiqueta = new JLabel(nombre);
-    etiqueta.setLabelFor(campo);
-    campos.add(etiqueta, restricciones);
-    restricciones.gridx = 1;
-    restricciones.weightx = 1;
-    restricciones.fill = GridBagConstraints.HORIZONTAL;
+  private void _agregarCampo(JPanel campos, String nombre, JComponent campo, String identificador) {
     campo.setName(identificador);
-    campos.add(campo, restricciones);
+    Interfaz.agregarFila(campos, new JLabel(nombre), campo);
   }
 
   public void cargar(Documento documento) {
-    if (documento == null) {
-      _id = null;
-      _encabezado.setText("Nuevo documento");
-      _tipo.setSelectedItem(TipoDocumento.LIBRO);
-      _titulo.setText("");
-      _descripcion.setText("");
-      _genero.setText("");
-      _valoracion.setText("");
-      _paginas.setText("");
-    } else {
-      _id = documento.getId();
-      _encabezado.setText("Editar documento");
-      _tipo.setSelectedItem(documento.getTipo());
-      _titulo.setText(documento.getTitulo());
-      _descripcion.setText(documento.getDescripcion());
-      _genero.setText(documento.getGenero());
-      _valoracion.setText(_texto(documento.getValoracion()));
-      _paginas.setText(_texto(documento.getPaginas()));
-    }
+    boolean nuevo = documento == null;
+    _id = nuevo ? null : documento.getId();
+    _encabezado.setText(nuevo ? "Nuevo documento" : "Editar documento");
+    _tipo.setSelectedItem(nuevo ? TipoDocumento.LIBRO : documento.getTipo());
+    _titulo.setText(nuevo ? "" : documento.getTitulo());
+    _descripcion.setText(nuevo ? "" : documento.getDescripcion());
+    _genero.setText(nuevo ? "" : documento.getGenero());
+    _valoracion.setText(nuevo ? "" : Objects.toString(documento.getValoracion(), ""));
+    _paginas.setText(nuevo ? "" : Objects.toString(documento.getPaginas(), ""));
     _descripcion.setCaretPosition(0);
-  }
-
-  private String _texto(Integer valor) {
-    return valor == null ? "" : valor.toString();
   }
 
   public UUID getId() {

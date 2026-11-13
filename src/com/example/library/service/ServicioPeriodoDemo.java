@@ -1,7 +1,6 @@
 package com.example.library.service;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,7 +18,9 @@ public final class ServicioPeriodoDemo {
   private final Clock _reloj;
 
   public ServicioPeriodoDemo() {
-    this(_rutaPredeterminada(), Clock.systemUTC());
+    this(
+        Path.of(System.getProperty("java.io.tmpdir"), "java-library-app", ARCHIVO_INICIO),
+        Clock.systemUTC());
   }
 
   public ServicioPeriodoDemo(Path archivoInicio, Clock reloj) {
@@ -55,12 +56,7 @@ public final class ServicioPeriodoDemo {
     Instant ahora = _reloj.instant();
 
     try {
-      Files.writeString(
-          _archivoInicio,
-          ahora.toString(),
-          StandardCharsets.UTF_8,
-          StandardOpenOption.CREATE_NEW,
-          StandardOpenOption.WRITE);
+      Files.writeString(_archivoInicio, ahora.toString(), StandardOpenOption.CREATE_NEW);
 
       return ahora;
     } catch (FileAlreadyExistsException e) {
@@ -73,16 +69,12 @@ public final class ServicioPeriodoDemo {
       throw new IOException("El inicio de la demo no es un archivo válido.");
     }
 
-    Instant inicio = Instant.parse(Files.readString(_archivoInicio, StandardCharsets.UTF_8));
+    Instant inicio = Instant.parse(Files.readString(_archivoInicio));
 
     if (inicio.isAfter(_reloj.instant())) {
       throw new IOException("El inicio de la demo no puede estar en el futuro.");
     }
 
     return inicio;
-  }
-
-  private static Path _rutaPredeterminada() {
-    return Path.of(System.getProperty("java.io.tmpdir"), "java-library-app", ARCHIVO_INICIO);
   }
 }

@@ -1,5 +1,9 @@
 package com.example.library.repository;
 
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 import com.example.library.domain.Documento;
 import java.io.EOFException;
 import java.io.FileOutputStream;
@@ -11,14 +15,14 @@ import java.io.ObjectStreamException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class RepositorioDocumentoBinario {
-  private final Path _ruta;
+  private final Path ruta;
 
   public RepositorioDocumentoBinario() {
     this(Path.of("src", "com", "example", "library", "data", "catalog", "libros.dat"));
@@ -28,256 +32,172 @@ public class RepositorioDocumentoBinario {
     if (ruta == null) {
       throw RepositorioExcepcion.rutaObligatoria();
     }
-
-    this._ruta = ruta.normalize();
+    this.ruta = ruta.normalize();
   }
 
   public ArrayList<Documento> leerTodos() {
-    if (Files.notExists(this._ruta)) {
-      throw RepositorioExcepcion.catalogoNoEncontrado(this._ruta);
-    }
-
-    if (!Files.isRegularFile(this._ruta)) {
-      throw RepositorioExcepcion.rutaNoEsArchivo(this._ruta);
-    }
-
-    try {
-      if (Files.size(this._ruta) == 0) {
-        throw RepositorioExcepcion.catalogoVacio(this._ruta);
-      }
-    } catch (RepositorioExcepcion e) {
-      throw e;
-    } catch (IOException e) {
-      throw RepositorioExcepcion.errorAlLeer(this._ruta, e);
-    }
-
-    try (ObjectInputStream entrada =
-        new ObjectInputStream(Files.newInputStream(this._ruta, StandardOpenOption.READ)); ) {
-      Object objetoLeido = entrada.readObject();
-      return this._validarDocumentosLeidos(objetoLeido);
-    } catch (InvalidClassException | ClassNotFoundException e) {
-      throw RepositorioExcepcion.catalogoIncompatible(this._ruta, e);
-    } catch (EOFException | ObjectStreamException e) {
-      throw RepositorioExcepcion.catalogoCorrupto(this._ruta, e);
-    } catch (RepositorioExcepcion e) {
-      throw e;
-    } catch (IOException e) {
-      throw RepositorioExcepcion.errorAlLeer(this._ruta, e);
-    } catch (RuntimeException e) {
-      throw RepositorioExcepcion.catalogoCorrupto(this._ruta, e);
-    }
+    return new ArrayList<>(leerCatalogo().values());
   }
 
   public Documento buscarPorId(UUID id) {
-    this._validarId(id);
-
-    for (Documento documento : this.leerTodos()) {
-      if (documento.getId().equals(id)) {
-        return documento;
-      }
+    validarId(id);
+    Documento encontrado = leerCatalogo().get(id);
+    if (encontrado == null) {
+      throw RepositorioExcepcion.documentoNoEncontrado(id);
     }
-
-    throw RepositorioExcepcion.documentoNoEncontrado(id);
+    return encontrado;
   }
 
   public void crear(Documento documento) {
-    this._validarDocumento(documento);
-
-    ArrayList<Documento> documentos =
-        Files.notExists(this._ruta) ? new ArrayList<>() : this.leerTodos();
-
-    for (Documento existente : documentos) {
-      if (existente.getId().equals(documento.getId())) {
-        throw RepositorioExcepcion.documentoDuplicado(documento.getId());
-      }
+    validarDocumento(documento);
+    Map<UUID, Documento> catalogo = Files.notExists(ruta) ? new LinkedHashMap<>() : leerCatalogo();
+    if (catalogo.putIfAbsent(documento.getId(), documento) != null) {
+      throw RepositorioExcepcion.documentoDuplicado(documento.getId());
     }
-
-    documentos.add(documento);
-    this._guardar(documentos);
+    guardar(catalogo.values());
   }
 
   public void actualizar(Documento documento) {
-    this._validarDocumento(documento);
-
-    ArrayList<Documento> documentos = this.leerTodos();
-    boolean estaActualizado = false;
-
-    for (int idx = 0; idx < documentos.size(); idx++) {
-      if (documentos.get(idx).getId().equals(documento.getId())) {
-        documentos.set(idx, documento);
-        estaActualizado = true;
-        break;
-      }
-    }
-
-    if (!estaActualizado) {
+    validarDocumento(documento);
+    Map<UUID, Documento> catalogo = leerCatalogo();
+    if (catalogo.replace(documento.getId(), documento) == null) {
       throw RepositorioExcepcion.documentoNoEncontrado(documento.getId());
     }
-
-    this._guardar(documentos);
+    guardar(catalogo.values());
   }
 
   public void eliminar(UUID id) {
-    this._validarId(id);
-
-    ArrayList<Documento> documentos = this.leerTodos();
-    boolean estaEliminado = false;
-
-    for (int idx = 0; idx < documentos.size(); idx++) {
-      if (documentos.get(idx).getId().equals(id)) {
-        documentos.remove(idx);
-        estaEliminado = true;
-        break;
-      }
-    }
-
-    if (!estaEliminado) {
+    validarId(id);
+    Map<UUID, Documento> catalogo = leerCatalogo();
+    if (catalogo.remove(id) == null) {
       throw RepositorioExcepcion.documentoNoEncontrado(id);
     }
-
-    this._guardar(documentos);
+    guardar(catalogo.values());
   }
 
-  private ArrayList<Documento> _validarDocumentosLeidos(Object objetoLeido) {
-    if (objetoLeido == null || objetoLeido.getClass() != ArrayList.class) {
-      throw RepositorioExcepcion.catalogoConFormatoInvalido(this._ruta);
+  private Map<UUID, Documento> leerCatalogo() {
+    if (Files.notExists(ruta)) {
+      throw RepositorioExcepcion.catalogoNoEncontrado(ruta);
     }
+    if (!Files.isRegularFile(ruta)) {
+      throw RepositorioExcepcion.rutaNoEsArchivo(ruta);
+    }
+    try {
+      if (Files.size(ruta) == 0) {
+        throw RepositorioExcepcion.catalogoVacio(ruta);
+      }
+      try (ObjectInputStream entrada = new ObjectInputStream(Files.newInputStream(ruta))) {
+        return validarCatalogo(entrada.readObject());
+      }
+    } catch (InvalidClassException | ClassNotFoundException e) {
+      throw RepositorioExcepcion.catalogoIncompatible(ruta, e);
+    } catch (EOFException | ObjectStreamException e) {
+      throw RepositorioExcepcion.catalogoCorrupto(ruta, e);
+    } catch (IOException e) {
+      throw RepositorioExcepcion.errorAlLeer(ruta, e);
+    } catch (RepositorioExcepcion e) {
+      throw e;
+    } catch (RuntimeException e) {
+      throw RepositorioExcepcion.catalogoCorrupto(ruta, e);
+    }
+  }
 
-    ArrayList<?> elementos = (ArrayList<?>) objetoLeido;
-    ArrayList<Documento> documentos = new ArrayList<>();
-    HashSet<UUID> ids = new HashSet<>();
-
-    for (int idx = 0; idx < elementos.size(); idx++) {
-      Object elemento = elementos.get(idx);
-
+  private Map<UUID, Documento> validarCatalogo(Object contenido) {
+    if (contenido == null || contenido.getClass() != ArrayList.class) {
+      throw RepositorioExcepcion.catalogoConFormatoInvalido(ruta);
+    }
+    // El índice permite buscar por id y mantiene el orden de la lista guardada en disco.
+    Map<UUID, Documento> catalogo = new LinkedHashMap<>();
+    for (Object elemento : (ArrayList<?>) contenido) {
+      int posicion = catalogo.size() + 1;
       if (elemento == null || elemento.getClass() != Documento.class) {
-        throw RepositorioExcepcion.elementoInvalido(this._ruta, idx + 1);
+        throw RepositorioExcepcion.elementoInvalido(ruta, posicion);
       }
-
-      Documento documentoOriginal = (Documento) elemento;
-      Documento documentoValidado;
-
+      Documento documento;
       try {
-        documentoValidado =
-            new Documento(
-                documentoOriginal.getId(),
-                documentoOriginal.getTipo(),
-                documentoOriginal.getTitulo(),
-                documentoOriginal.getDescripcion(),
-                documentoOriginal.getGenero(),
-                documentoOriginal.getValoracion(),
-                documentoOriginal.getPaginas());
+        documento = ((Documento) elemento).copiaValidada();
       } catch (RuntimeException e) {
-        throw RepositorioExcepcion.documentoInvalido(this._ruta, idx + 1, e);
+        throw RepositorioExcepcion.documentoInvalido(ruta, posicion, e);
       }
-
-      if (!ids.add(documentoValidado.getId())) {
-        throw RepositorioExcepcion.idDuplicadoEnCatalogo(this._ruta, documentoValidado.getId());
+      if (catalogo.putIfAbsent(documento.getId(), documento) != null) {
+        throw RepositorioExcepcion.idDuplicadoEnCatalogo(ruta, documento.getId());
       }
-
-      documentos.add(documentoValidado);
     }
-
-    return documentos;
+    return catalogo;
   }
 
-  private void _guardar(ArrayList<Documento> documentos) {
-    Path directorio = this._ruta.toAbsolutePath().getParent();
-    Path temporal = null;
-
+  private void guardar(Collection<Documento> documentos) {
+    Path directorio = ruta.toAbsolutePath().getParent();
     try {
       Files.createDirectories(directorio);
-
-      temporal = Files.createTempFile(directorio, this._ruta.getFileName().toString(), ".tmp");
-
-      try (FileOutputStream archivoTemporal = new FileOutputStream(temporal.toFile());
-          ObjectOutputStream salida = new ObjectOutputStream(archivoTemporal)) {
-        salida.writeObject(documentos);
-        salida.flush();
-        archivoTemporal.getFD().sync();
-      }
-
-      this._reemplazarCatalogo(temporal);
-      temporal = null;
-    } catch (IOException e) {
-      throw RepositorioExcepcion.errorAlPersistir(this._ruta, e);
-    } finally {
-      if (temporal != null) {
-        try {
-          Files.deleteIfExists(temporal);
-        } catch (IOException ignored) {
-        }
-      }
-    }
-  }
-
-  private void _reemplazarCatalogo(Path temporal) throws IOException {
-    try {
-      Files.move(
-          temporal,
-          this._ruta,
-          StandardCopyOption.ATOMIC_MOVE,
-          StandardCopyOption.REPLACE_EXISTING);
-      return;
-    } catch (AtomicMoveNotSupportedException e) {
-      this._reemplazarConRespaldo(temporal);
-    }
-  }
-
-  private void _reemplazarConRespaldo(Path temporal) throws IOException {
-    Path directorio = this._ruta.toAbsolutePath().getParent();
-    boolean hayCatalogoAnterior = Files.exists(this._ruta);
-    Path respaldo =
-        hayCatalogoAnterior
-            ? Files.createTempFile(directorio, this._ruta.getFileName().toString(), ".bak")
-            : null;
-    boolean restauradoOReemplazado = false;
-
-    try {
-      if (hayCatalogoAnterior) {
-        Files.copy(
-            this._ruta,
-            respaldo,
-            StandardCopyOption.REPLACE_EXISTING,
-            StandardCopyOption.COPY_ATTRIBUTES);
-      }
-
+      Path temporal = Files.createTempFile(directorio, ruta.getFileName().toString(), ".tmp");
       try {
-        Files.move(temporal, this._ruta, StandardCopyOption.REPLACE_EXISTING);
-        restauradoOReemplazado = true;
-      } catch (IOException errorAlReemplazar) {
-        if (hayCatalogoAnterior) {
-          try {
-            Files.copy(
-                respaldo,
-                this._ruta,
-                StandardCopyOption.REPLACE_EXISTING,
-                StandardCopyOption.COPY_ATTRIBUTES);
-            restauradoOReemplazado = true;
-          } catch (IOException errorAlRestaurar) {
-            errorAlReemplazar.addSuppressed(errorAlRestaurar);
-          }
+        try (FileOutputStream archivo = new FileOutputStream(temporal.toFile());
+            ObjectOutputStream salida = new ObjectOutputStream(archivo)) {
+          salida.writeObject(new ArrayList<>(documentos));
+          salida.flush();
+          archivo.getFD().sync();
         }
+        reemplazarCatalogo(temporal);
+      } finally {
+        limpiarTemporal(temporal);
+      }
+    } catch (IOException e) {
+      throw RepositorioExcepcion.errorAlPersistir(ruta, e);
+    }
+  }
 
+  private void reemplazarCatalogo(Path temporal) throws IOException {
+    try {
+      Files.move(temporal, ruta, ATOMIC_MOVE, REPLACE_EXISTING);
+    } catch (AtomicMoveNotSupportedException e) {
+      if (Files.exists(ruta)) {
+        reemplazarConRespaldo(temporal);
+      } else {
+        Files.move(temporal, ruta, REPLACE_EXISTING);
+      }
+    }
+  }
+
+  private void reemplazarConRespaldo(Path temporal) throws IOException {
+    Path respaldo =
+        Files.createTempFile(temporal.getParent(), ruta.getFileName().toString(), ".bak");
+    boolean conservarRespaldo = false;
+    try {
+      Files.copy(ruta, respaldo, REPLACE_EXISTING, COPY_ATTRIBUTES);
+      try {
+        Files.move(temporal, ruta, REPLACE_EXISTING);
+      } catch (IOException errorAlReemplazar) {
+        try {
+          Files.copy(respaldo, ruta, REPLACE_EXISTING, COPY_ATTRIBUTES);
+        } catch (IOException errorAlRestaurar) {
+          conservarRespaldo = true;
+          errorAlReemplazar.addSuppressed(errorAlRestaurar);
+        }
         throw errorAlReemplazar;
       }
     } finally {
-      if (respaldo != null && restauradoOReemplazado) {
-        try {
-          Files.deleteIfExists(respaldo);
-        } catch (IOException ignored) {
-        }
+      if (!conservarRespaldo) {
+        limpiarTemporal(respaldo);
       }
     }
   }
 
-  private void _validarDocumento(Documento documento) {
+  private void limpiarTemporal(Path archivo) {
+    try {
+      Files.deleteIfExists(archivo);
+    } catch (IOException ignored) {
+      // Un fallo de limpieza no cambia el resultado del guardado.
+    }
+  }
+
+  private void validarDocumento(Documento documento) {
     if (documento == null) {
       throw RepositorioExcepcion.documentoObligatorio();
     }
   }
 
-  private void _validarId(UUID id) {
+  private void validarId(UUID id) {
     if (id == null) {
       throw RepositorioExcepcion.idObligatorio();
     }
