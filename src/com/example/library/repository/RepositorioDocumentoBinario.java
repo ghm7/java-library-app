@@ -95,7 +95,9 @@ public class RepositorioDocumentoBinario {
   public void crear(Documento documento) {
     this._validarDocumento(documento);
 
-    ArrayList<Documento> documentos = this.leerTodos();
+    ArrayList<Documento> documentos = Files.notExists(this._ruta)
+      ? new ArrayList<>()
+      : this.leerTodos();
 
     for (Documento existente : documentos) {
       if (existente.getId().equals(documento.getId())) {
@@ -266,20 +268,25 @@ public class RepositorioDocumentoBinario {
 
   private void _reemplazarConRespaldo(Path temporal) throws IOException {
     Path directorio = this._ruta.toAbsolutePath().getParent();
-    Path respaldo = Files.createTempFile(
-      directorio,
-      this._ruta.getFileName().toString(),
-      ".bak"
-    );
+    boolean hayCatalogoAnterior = Files.exists(this._ruta);
+    Path respaldo = hayCatalogoAnterior
+      ? Files.createTempFile(
+        directorio,
+        this._ruta.getFileName().toString(),
+        ".bak"
+      )
+      : null;
     boolean restauradoOReemplazado = false;
 
     try {
-      Files.copy(
-        this._ruta,
-        respaldo,
-        StandardCopyOption.REPLACE_EXISTING,
-        StandardCopyOption.COPY_ATTRIBUTES
-      );
+      if (hayCatalogoAnterior) {
+        Files.copy(
+          this._ruta,
+          respaldo,
+          StandardCopyOption.REPLACE_EXISTING,
+          StandardCopyOption.COPY_ATTRIBUTES
+        );
+      }
 
       try {
         Files.move(
@@ -289,22 +296,24 @@ public class RepositorioDocumentoBinario {
         );
         restauradoOReemplazado = true;
       } catch (IOException errorAlReemplazar) {
-        try {
-          Files.copy(
-            respaldo,
-            this._ruta,
-            StandardCopyOption.REPLACE_EXISTING,
-            StandardCopyOption.COPY_ATTRIBUTES
-          );
-          restauradoOReemplazado = true;
-        } catch (IOException errorAlRestaurar) {
-          errorAlReemplazar.addSuppressed(errorAlRestaurar);
+        if (hayCatalogoAnterior) {
+          try {
+            Files.copy(
+              respaldo,
+              this._ruta,
+              StandardCopyOption.REPLACE_EXISTING,
+              StandardCopyOption.COPY_ATTRIBUTES
+            );
+            restauradoOReemplazado = true;
+          } catch (IOException errorAlRestaurar) {
+            errorAlReemplazar.addSuppressed(errorAlRestaurar);
+          }
         }
 
         throw errorAlReemplazar;
       }
     } finally {
-      if (restauradoOReemplazado) {
+      if (respaldo != null && restauradoOReemplazado) {
         try {
           Files.deleteIfExists(respaldo);
         } catch (IOException ignored) {

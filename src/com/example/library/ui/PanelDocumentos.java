@@ -105,9 +105,20 @@ public class PanelDocumentos extends JPanel {
 
     private JButton _boton(String texto, Runnable accion) {
         JButton boton = Interfaz.botonPrimario(texto);
-        boton.addActionListener(e -> accion.run());
+        boton.addActionListener(e -> _ejecutarAccion(accion));
 
         return boton;
+    }
+
+    private void _ejecutarAccion(Runnable accion) {
+        try {
+            accion.run();
+        } catch (RuntimeException e) {
+            _mensaje(
+                "No se pudo completar la operación. Actualizá el catálogo e intentá nuevamente.",
+                true
+            );
+        }
     }
 
     private JButton _botonEscritura(String texto, Runnable accion) {
@@ -182,6 +193,7 @@ public class PanelDocumentos extends JPanel {
 
     private void _mostrarCatalogo(String aviso) {
         ResultadoCargaCatalogo resultado = _carga.cargarCatalogo();
+        _accionesEscritura.clear();
         _catalogo.removeAll();
         _catalogo.add(_crearCabeceraCatalogo(resultado), BorderLayout.NORTH);
 
@@ -200,7 +212,11 @@ public class PanelDocumentos extends JPanel {
         cabecera.add(Interfaz.titulo("Catálogo"), BorderLayout.WEST);
 
         JButton crear = _botonEscritura("Nuevo documento", () -> _abrirFormulario(null));
-        crear.setEnabled(resultado.getEstado() == EstadoCargaCatalogo.CARGADO);
+        crear.setEnabled(
+            !_demoExpirada
+                && (resultado.getEstado() == EstadoCargaCatalogo.CARGADO
+                    || resultado.getEstado() == EstadoCargaCatalogo.AUSENTE)
+        );
         
         if (_demoExpirada) {
             crear.setEnabled(false);
@@ -301,6 +317,7 @@ public class PanelDocumentos extends JPanel {
     }
 
     private void _construirDetalle(Documento documento) {
+        _accionesEscritura.clear();
         _detalle.removeAll();
         _detalle.add(Interfaz.titulo("Detalle del documento"), BorderLayout.NORTH);
         _detalle.add(_crearCamposDetalle(documento), BorderLayout.CENTER);
@@ -400,6 +417,11 @@ public class PanelDocumentos extends JPanel {
             _mensaje("Revisá los datos: " + e.getMessage(), true);
         } catch (ServicioDocumentoExcepcion e) {
             _mensaje(e.getMessage(), true);
+        } catch (RuntimeException e) {
+            _mensaje(
+                "No se pudo guardar el documento. Revisá los datos e intentá nuevamente.",
+                true
+            );
         }
     }
 
@@ -433,6 +455,11 @@ public class PanelDocumentos extends JPanel {
             _mostrarCatalogo("Documento eliminado correctamente.");
         } catch (ServicioDocumentoExcepcion e) {
             _mensaje(e.getMessage(), true);
+        } catch (RuntimeException e) {
+            _mensaje(
+                "No se pudo eliminar el documento. Actualizá el catálogo e intentá nuevamente.",
+                true
+            );
         }
     }
 

@@ -17,7 +17,7 @@ public class ServicioDocumentoExcepcion extends RuntimeException {
 
   public static ServicioDocumentoExcepcion errorAlListar(Throwable causa) {
     return new ServicioDocumentoExcepcion(
-      "No se pudo obtener el catálogo de documentos.",
+      "No se pudo obtener el catálogo de documentos. " + causa.getMessage(),
       causa
     );
   }

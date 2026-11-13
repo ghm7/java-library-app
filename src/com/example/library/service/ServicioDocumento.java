@@ -10,7 +10,7 @@ import com.example.library.repository.RepositorioDocumentoBinario;
 import com.example.library.repository.RepositorioExcepcion;
 
 public class ServicioDocumento {
-  private RepositorioDocumentoBinario _repositorio;
+  private final RepositorioDocumentoBinario _repositorio;
 
   public ServicioDocumento() {
     this(new RepositorioDocumentoBinario());
@@ -30,7 +30,7 @@ public class ServicioDocumento {
     try {
       return this._repositorio.leerTodos();
     } catch (RepositorioExcepcion e) {
-      throw ServicioDocumentoExcepcion.errorAlConsultar(e);
+      throw ServicioDocumentoExcepcion.errorAlListar(e);
     }
   }
 
