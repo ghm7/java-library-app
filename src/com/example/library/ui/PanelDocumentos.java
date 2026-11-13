@@ -10,18 +10,13 @@ import com.example.library.service.ServicioDocumentoExcepcion;
 import com.example.library.service.ServicioPeriodoDemo;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
-import java.awt.Container;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.awt.LayoutManager;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -29,17 +24,12 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import javax.swing.Scrollable;
 import javax.swing.Timer;
 
 public class PanelDocumentos extends JPanel {
   private static final String CATALOGO = "catalogo";
   private static final String DETALLE = "detalle";
   private static final String FORMULARIO = "formulario";
-  private static final int ANCHO_TARJETA_CATALOGO = 120;
-  private static final int ALTO_TARJETA_CATALOGO = 180;
-  private static final int ESPACIO_HORIZONTAL_TARJETAS = 8;
-  private static final int ESPACIO_VERTICAL_TARJETAS = 32;
 
   private final ServicioDocumento _servicio;
   private final ServicioCargaCatalogo _carga;
@@ -52,6 +42,7 @@ public class PanelDocumentos extends JPanel {
   private final Predicate<Documento> _confirmarEliminacion;
   private final ServicioPeriodoDemo _periodoDemo;
   private final List<JButton> _accionesEscritura = new ArrayList<>();
+  private final List<String> _variantesEstantesAdicionales = new ArrayList<>();
   private final Timer _vigilanteExpiracion;
   private boolean _demoExpirada;
   private boolean _avisoExpiracionMostrado;
@@ -240,144 +231,36 @@ public class PanelDocumentos extends JPanel {
   private void _mostrarCatalogoCargado(ResultadoCargaCatalogo resultado, String aviso) {
     List<Documento> documentos = resultado.getDocumentos();
 
-    if (documentos.isEmpty()) {
-      _catalogo.add(
-          Interfaz.texto(
-              "El catálogo está vacío. Agregá el primer documento con «Nuevo documento»."),
-          BorderLayout.CENTER);
-    } else {
-      _catalogo.add(_crearListaDocumentos(documentos), BorderLayout.CENTER);
-    }
+    _catalogo.add(_crearListaDocumentos(documentos), BorderLayout.CENTER);
 
     _mensaje(aviso.isEmpty() ? resultado.getMensaje() : aviso, false);
   }
 
   private JScrollPane _crearListaDocumentos(List<Documento> documentos) {
-    JPanel tarjetas =
-        new PanelEnvolvente(
-            new LayoutEnvolvente(
-                FlowLayout.LEFT, ESPACIO_HORIZONTAL_TARJETAS, ESPACIO_VERTICAL_TARJETAS));
-    tarjetas.setOpaque(false);
-
-    for (Documento documento : documentos) {
-      tarjetas.add(_crearTarjetaDocumento(documento));
-    }
-
-    JScrollPane scroll = new JScrollPane(tarjetas);
+    ComposicionEstantes composicion =
+        new ComposicionEstantes(documentos, this::_varianteEstanteAdicional);
+    JScrollPane scroll = new JScrollPane(composicion);
     scroll.getVerticalScrollBar().setUnitIncrement(20);
     scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+    scroll.setBorder(BorderFactory.createEmptyBorder());
+    scroll.setOpaque(false);
+    scroll.getViewport().setOpaque(false);
 
     return scroll;
   }
 
-  private JPanel _crearTarjetaDocumento(Documento documento) {
-    JPanel tarjeta = Interfaz.superficie();
-    tarjeta.setLayout(new BorderLayout(16, 8));
-    tarjeta.add(Interfaz.subtitulo(Interfaz.nombreTipo(documento.getTipo())), BorderLayout.NORTH);
-
-    JTextArea titulo = Interfaz.texto(documento.getTitulo());
-    titulo.setRows(2);
-    tarjeta.add(titulo, BorderLayout.CENTER);
-    tarjeta.add(
-        _boton("Ver detalle", () -> _mostrarDetalle(documento.getId(), "")), BorderLayout.EAST);
-    tarjeta.setPreferredSize(new Dimension(ANCHO_TARJETA_CATALOGO, ALTO_TARJETA_CATALOGO));
-
-    return tarjeta;
-  }
-
-  private static class LayoutEnvolvente extends FlowLayout {
-    LayoutEnvolvente(int alineacion, int espacioHorizontal, int espacioVertical) {
-      super(alineacion, espacioHorizontal, espacioVertical);
+  private String _varianteEstanteAdicional(int indiceVisualFila) {
+    int indice = indiceVisualFila - 4;
+    if (indice < 0) {
+      throw new IllegalArgumentException("El índice de una fila adicional debe comenzar en 4.");
     }
 
-    @Override
-    public Dimension preferredLayoutSize(Container contenedor) {
-      return _tamanoLayout(contenedor, true);
+    List<String> variantes = ComposicionEstantes.getVariantesEstantes();
+    while (_variantesEstantesAdicionales.size() <= indice) {
+      _variantesEstantesAdicionales.add(
+          variantes.get(ThreadLocalRandom.current().nextInt(variantes.size())));
     }
-
-    @Override
-    public Dimension minimumLayoutSize(Container contenedor) {
-      return _tamanoLayout(contenedor, false);
-    }
-
-    private Dimension _tamanoLayout(Container contenedor, boolean preferido) {
-      synchronized (contenedor.getTreeLock()) {
-        int anchoContenedor = contenedor.getWidth();
-        if (anchoContenedor == 0) {
-          anchoContenedor = Integer.MAX_VALUE;
-        }
-
-        Insets margenes = contenedor.getInsets();
-        int anchoFila = anchoContenedor - margenes.left - margenes.right - getHgap() * 2;
-        int anchoActual = 0;
-        int altoActual = 0;
-        int altoTotal = 0;
-
-        for (int indice = 0; indice < contenedor.getComponentCount(); indice++) {
-          java.awt.Component componente = contenedor.getComponent(indice);
-          if (!componente.isVisible()) {
-            continue;
-          }
-
-          Dimension tamano =
-              preferido ? componente.getPreferredSize() : componente.getMinimumSize();
-          if (anchoActual > 0 && anchoActual + getHgap() + tamano.width > anchoFila) {
-            altoTotal += altoActual + getVgap();
-            anchoActual = 0;
-            altoActual = 0;
-          }
-
-          anchoActual += (anchoActual == 0 ? 0 : getHgap()) + tamano.width;
-          altoActual = Math.max(altoActual, tamano.height);
-        }
-
-        if (altoActual > 0) {
-          altoTotal += altoActual;
-        }
-
-        return new Dimension(0, altoTotal + margenes.top + margenes.bottom + getVgap() * 2);
-      }
-    }
-  }
-
-  private static final class PanelEnvolvente extends JPanel implements Scrollable {
-    PanelEnvolvente(LayoutManager layout) {
-      super(layout);
-      addComponentListener(
-          new ComponentAdapter() {
-            @Override
-            public void componentResized(ComponentEvent evento) {
-              revalidate();
-            }
-          });
-    }
-
-    @Override
-    public Dimension getPreferredScrollableViewportSize() {
-      return getPreferredSize();
-    }
-
-    @Override
-    public int getScrollableUnitIncrement(
-        java.awt.Rectangle rectanguloVisible, int orientacion, int direccion) {
-      return 20;
-    }
-
-    @Override
-    public int getScrollableBlockIncrement(
-        java.awt.Rectangle rectanguloVisible, int orientacion, int direccion) {
-      return rectanguloVisible.height;
-    }
-
-    @Override
-    public boolean getScrollableTracksViewportWidth() {
-      return true;
-    }
-
-    @Override
-    public boolean getScrollableTracksViewportHeight() {
-      return false;
-    }
+    return _variantesEstantesAdicionales.get(indice);
   }
 
   private void _mostrarTarjeta(String nombre) {

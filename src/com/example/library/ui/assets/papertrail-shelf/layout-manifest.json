@@ -1,0 +1,107 @@
+{
+  "layoutId": "papertrail-catalog-shelves-v1",
+  "referenceImage": "docs/reference/papertrail-catalog-reference.png",
+  "coordinateSystem": {
+    "width": 1440,
+    "height": 900,
+    "origin": "top-left of the catalog composition, excluding the application sidebar and toolbar",
+    "scaling": "uniform: scale every x, y, width and height by availableWidth / 1440; preferred composition height is 900 × scale"
+  },
+  "drawingOrder": ["background", "shelves", "cards", "frontDecorations"],
+  "cardInteraction": {
+    "target": "none",
+    "action": "none",
+    "note": "Cards are passive blank surfaces in this scope. Do not render labels, buttons or other controls inside a card. Their bounds are reserved for a future cover or thumbnail and detail modal."
+  },
+  "fixedShelfVariants": {
+    "top-shelf": "shelves/02_cozy_honey_wooden_shelf.png",
+    "middle-shelf": "shelves/02_cozy_honey_wooden_shelf.png",
+    "bottom-shelf": "shelves/02_cozy_honey_wooden_shelf.png"
+  },
+  "overflowShelfVariantSelection": {
+    "selectionId": "papertrail-overflow-shelf-variant-shuffle-v1",
+    "sourceDirectory": "assets/papertrail-shelf/shelves",
+    "algorithm": "Choose one listed variant the first time each overflow row index appears. Retain it for the lifetime of the catalog panel, including when that row temporarily disappears after resize or catalog refresh.",
+    "startsAtRow": 4,
+    "variants": [
+      "shelves/01_warm_wooden_wall_shelf_with_central_bracket.png",
+      "shelves/02_cozy_honey_wooden_shelf.png",
+      "shelves/03_cozy_caramel_wooden_floating_shelf.png",
+      "shelves/04_polished_oak_floating_shelf.png",
+      "shelves/05_cozy_honeywood_floating_shelf.png",
+      "shelves/06_cozy_maple_floating_shelf.png",
+      "shelves/07_warm_honey_wooden_shelf.png",
+      "shelves/08_cozy_painted_wooden_shelf.png",
+      "shelves/10_warm_caramel_wooden_wall_shelf.png"
+    ]
+  },
+  "shelves": [
+    {"id": "top-shelf", "x": 30, "y": 285, "width": 1380, "height": 86},
+    {"id": "middle-shelf", "x": 30, "y": 550, "width": 1380, "height": 86},
+    {"id": "bottom-shelf", "x": 30, "y": 825, "width": 1380, "height": 75}
+  ],
+  "cardSlots": [
+    {"id": "card-01", "shelfId": "top-shelf", "x": 135, "y": 92, "width": 126, "height": 193},
+    {"id": "card-02", "shelfId": "top-shelf", "x": 280, "y": 98, "width": 130, "height": 187},
+    {"id": "card-03", "shelfId": "top-shelf", "x": 429, "y": 90, "width": 126, "height": 195},
+    {"id": "card-04", "shelfId": "top-shelf", "x": 574, "y": 96, "width": 128, "height": 189},
+    {"id": "card-05", "shelfId": "top-shelf", "x": 721, "y": 86, "width": 130, "height": 199},
+    {"id": "card-06", "shelfId": "top-shelf", "x": 870, "y": 90, "width": 126, "height": 195},
+    {"id": "card-07", "shelfId": "top-shelf", "x": 1015, "y": 88, "width": 129, "height": 197},
+    {"id": "card-08", "shelfId": "top-shelf", "x": 1163, "y": 94, "width": 127, "height": 191},
+
+    {"id": "card-09", "shelfId": "middle-shelf", "x": 100, "y": 378, "width": 125, "height": 172},
+    {"id": "card-10", "shelfId": "middle-shelf", "x": 245, "y": 378, "width": 125, "height": 172},
+    {"id": "card-11", "shelfId": "middle-shelf", "x": 390, "y": 374, "width": 126, "height": 176},
+    {"id": "card-12", "shelfId": "middle-shelf", "x": 535, "y": 378, "width": 125, "height": 172},
+    {"id": "card-13", "shelfId": "middle-shelf", "x": 818, "y": 390, "width": 94, "height": 160},
+    {"id": "card-14", "shelfId": "middle-shelf", "x": 925, "y": 390, "width": 94, "height": 160},
+    {"id": "card-15", "shelfId": "middle-shelf", "x": 1032, "y": 390, "width": 94, "height": 160},
+    {"id": "card-16", "shelfId": "middle-shelf", "x": 1139, "y": 390, "width": 94, "height": 160},
+    {"id": "card-17", "shelfId": "middle-shelf", "x": 1246, "y": 390, "width": 94, "height": 160},
+    {"id": "card-18", "shelfId": "middle-shelf", "x": 1353, "y": 390, "width": 74, "height": 160},
+
+    {"id": "card-19", "shelfId": "bottom-shelf", "x": 130, "y": 628, "width": 125, "height": 197},
+    {"id": "card-20", "shelfId": "bottom-shelf", "x": 275, "y": 628, "width": 125, "height": 197},
+    {"id": "card-21", "shelfId": "bottom-shelf", "x": 680, "y": 628, "width": 125, "height": 197},
+    {"id": "card-22", "shelfId": "bottom-shelf", "x": 825, "y": 628, "width": 125, "height": 197},
+    {"id": "card-23", "shelfId": "bottom-shelf", "x": 970, "y": 628, "width": 125, "height": 197},
+    {"id": "card-24", "shelfId": "bottom-shelf", "x": 1115, "y": 628, "width": 125, "height": 197},
+    {"id": "card-25", "shelfId": "bottom-shelf", "x": 1260, "y": 628, "width": 125, "height": 197}
+  ],
+  "decorations": [
+    {"id": "trailing-plant-left", "asset": "01_trailing_plant_terracotta.png", "layer": "frontDecorations", "x": 4, "y": 86, "width": 105, "height": 176},
+    {"id": "tall-plant-right", "asset": "02_tall_plant_cream_pot.png", "layer": "frontDecorations", "x": 1312, "y": 158, "width": 76, "height": 116},
+    {"id": "house-top", "asset": "03_miniature_house_top.png", "layer": "frontDecorations", "x": 78, "y": 240, "width": 58, "height": 63},
+    {"id": "chalkboard-top", "asset": "04_chalkboard_sign.png", "layer": "frontDecorations", "x": 1215, "y": 208, "width": 54, "height": 69},
+    {"id": "bakery-top", "asset": "05_bakery_display.png", "layer": "frontDecorations", "x": 1195, "y": 126, "width": 90, "height": 104},
+    {"id": "small-plant-top", "asset": "06_small_plant_cream_pot.png", "layer": "frontDecorations", "x": 1065, "y": 248, "width": 60, "height": 82},
+    {"id": "sleeping-cat-middle", "asset": "07_sleeping_cat.png", "layer": "frontDecorations", "x": 645, "y": 500, "width": 105, "height": 66},
+    {"id": "leaf-mug-middle", "asset": "08_leaf_mug.png", "layer": "frontDecorations", "x": 42, "y": 492, "width": 62, "height": 62},
+    {"id": "yellow-flowers-middle", "asset": "09_yellow_flowers_vase.png", "layer": "frontDecorations", "x": 750, "y": 467, "width": 54, "height": 101},
+    {"id": "cat-book-stack-bottom", "asset": "10_cat_on_book_stack.png", "layer": "frontDecorations", "x": 455, "y": 740, "width": 112, "height": 80},
+    {"id": "terracotta-jar-top", "asset": "11_terracotta_jar.png", "layer": "frontDecorations", "x": 1125, "y": 252, "width": 43, "height": 43},
+    {"id": "tea-cup-middle", "asset": "12_tea_cup_saucer.png", "layer": "frontDecorations", "x": 1346, "y": 505, "width": 68, "height": 49},
+    {"id": "pastel-book-stack-bottom", "asset": "13_pastel_book_stack.png", "layer": "frontDecorations", "x": 470, "y": 710, "width": 126, "height": 90},
+    {"id": "globe-bottom", "asset": "14_desktop_globe.png", "layer": "frontDecorations", "x": 1320, "y": 704, "width": 75, "height": 94},
+    {"id": "hanging-vines-left", "asset": "15_hanging_vines.png", "layer": "frontDecorations", "x": 14, "y": 380, "width": 76, "height": 134},
+    {"id": "heart-leaf-plant-bottom", "asset": "16_heart_leaf_terracotta_plant.png", "layer": "frontDecorations", "x": 42, "y": 704, "width": 86, "height": 90},
+    {"id": "house-bottom", "asset": "17_mini_house_bottom.png", "layer": "frontDecorations", "x": 585, "y": 724, "width": 70, "height": 71},
+    {"id": "small-jar-bottom", "asset": "18_small_terracotta_jar.png", "layer": "frontDecorations", "x": 610, "y": 778, "width": 38, "height": 36},
+    {"id": "green-plant-bottom", "asset": "19_green_plant_brown_pot.png", "layer": "frontDecorations", "x": 590, "y": 695, "width": 65, "height": 80},
+    {"id": "pink-flowers-bottom", "asset": "20_pink_flowers_vase.png", "layer": "frontDecorations", "x": 1250, "y": 742, "width": 58, "height": 89},
+    {"id": "camper-van-bottom", "asset": "21_pink_camper_van.png", "layer": "frontDecorations", "x": 1170, "y": 732, "width": 95, "height": 65},
+    {"id": "white-vase-bottom", "asset": "22_white_ceramic_vase.png", "layer": "frontDecorations", "x": 1400, "y": 770, "width": 36, "height": 42}
+  ],
+  "emptyCatalog": {
+    "renderCards": false,
+    "renderShelves": true,
+    "renderDecorations": true,
+    "renderEmptyMessage": false
+  },
+  "overflowDocuments": {
+    "startAtDocumentIndex": 26,
+    "layout": "wrapping-card-layout-with-random-shelf-per-row",
+    "decorations": "none"
+  }
+}
