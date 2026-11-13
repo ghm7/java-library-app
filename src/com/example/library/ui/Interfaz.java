@@ -1,5 +1,6 @@
 package com.example.library.ui;
 
+import com.example.library.domain.TipoDocumento;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Font;
@@ -8,7 +9,6 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
-import com.example.library.domain.TipoDocumento;
 
 public class Interfaz {
   private Interfaz() {}
@@ -71,11 +71,9 @@ public class Interfaz {
 
     panel.setBackground(Color.WHITE);
     panel.setBorder(
-      BorderFactory.createCompoundBorder(
-        BorderFactory.createLineBorder(new Color(0xE7DDD2)),
-        BorderFactory.createEmptyBorder(28, 28, 28, 28)
-      )
-    );
+        BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0xE7DDD2)),
+            BorderFactory.createEmptyBorder(28, 28, 28, 28)));
 
     return panel;
   }

@@ -1,8 +1,7 @@
 package com.example.library.service;
 
-import java.util.List;
-
 import com.example.library.domain.Documento;
+import java.util.List;
 
 public class ResultadoCargaCatalogo {
   private final EstadoCargaCatalogo _estado;
@@ -10,10 +9,7 @@ public class ResultadoCargaCatalogo {
   private final String _mensaje;
 
   public ResultadoCargaCatalogo(
-    EstadoCargaCatalogo estado,
-    List<Documento> documentos,
-    String mensaje
-  ) {
+      EstadoCargaCatalogo estado, List<Documento> documentos, String mensaje) {
     if (estado == null) {
       throw new IllegalArgumentException("El estado de carga es obligatorio.");
     }

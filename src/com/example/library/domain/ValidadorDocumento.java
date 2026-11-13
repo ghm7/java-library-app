@@ -3,8 +3,7 @@ package com.example.library.domain;
 import java.util.UUID;
 
 public class ValidadorDocumento {
-  private ValidadorDocumento() {
-  }
+  private ValidadorDocumento() {}
 
   public static UUID validarId(UUID id) {
     if (id == null) {
@@ -44,9 +43,7 @@ public class ValidadorDocumento {
     }
 
     if (valoracion < 1 || valoracion > 5) {
-      throw new ValidarExcepcion(
-        "La valoración debe estar entre 1 y 5"
-      );
+      throw new ValidarExcepcion("La valoración debe estar entre 1 y 5");
     }
 
     return valoracion;
@@ -60,9 +57,7 @@ public class ValidadorDocumento {
     try {
       return validarValoracion(Integer.valueOf(valoracion.trim()));
     } catch (NumberFormatException e) {
-      throw new ValidarExcepcion(
-        "La valoración debe ser un numero entero."
-      );
+      throw new ValidarExcepcion("La valoración debe ser un numero entero.");
     }
   }
 
@@ -72,9 +67,7 @@ public class ValidadorDocumento {
     }
 
     if (paginas < 1 || paginas > 999) {
-      throw new ValidarExcepcion(
-        "La cantidad de páginas debe estar entre 1 y 999."
-      );
+      throw new ValidarExcepcion("La cantidad de páginas debe estar entre 1 y 999.");
     }
 
     return paginas;
@@ -88,9 +81,7 @@ public class ValidadorDocumento {
     try {
       return validarPaginas(Integer.valueOf(paginas.trim()));
     } catch (NumberFormatException e) {
-      throw new ValidarExcepcion(
-        "La cantidad de páginas debe ser un numero entero."
-      );
+      throw new ValidarExcepcion("La cantidad de páginas debe ser un numero entero.");
     }
   }
 }

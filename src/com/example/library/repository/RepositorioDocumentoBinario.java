@@ -1,5 +1,6 @@
 package com.example.library.repository;
 
+import com.example.library.domain.Documento;
 import java.io.EOFException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -16,21 +17,11 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.UUID;
 
-import com.example.library.domain.Documento;
-
 public class RepositorioDocumentoBinario {
   private final Path _ruta;
-  
+
   public RepositorioDocumentoBinario() {
-    this(Path.of(
-      "src",
-      "com",
-      "example",
-      "library",
-      "data",
-      "catalog",
-      "libros.dat"
-    ));
+    this(Path.of("src", "com", "example", "library", "data", "catalog", "libros.dat"));
   }
 
   public RepositorioDocumentoBinario(Path ruta) {
@@ -45,7 +36,7 @@ public class RepositorioDocumentoBinario {
     if (Files.notExists(this._ruta)) {
       throw RepositorioExcepcion.catalogoNoEncontrado(this._ruta);
     }
-    
+
     if (!Files.isRegularFile(this._ruta)) {
       throw RepositorioExcepcion.rutaNoEsArchivo(this._ruta);
     }
@@ -60,11 +51,8 @@ public class RepositorioDocumentoBinario {
       throw RepositorioExcepcion.errorAlLeer(this._ruta, e);
     }
 
-    try (
-      ObjectInputStream entrada = new ObjectInputStream(
-        Files.newInputStream(this._ruta, StandardOpenOption.READ)
-      );
-    ) {
+    try (ObjectInputStream entrada =
+        new ObjectInputStream(Files.newInputStream(this._ruta, StandardOpenOption.READ)); ) {
       Object objetoLeido = entrada.readObject();
       return this._validarDocumentosLeidos(objetoLeido);
     } catch (InvalidClassException | ClassNotFoundException e) {
@@ -95,9 +83,8 @@ public class RepositorioDocumentoBinario {
   public void crear(Documento documento) {
     this._validarDocumento(documento);
 
-    ArrayList<Documento> documentos = Files.notExists(this._ruta)
-      ? new ArrayList<>()
-      : this.leerTodos();
+    ArrayList<Documento> documentos =
+        Files.notExists(this._ruta) ? new ArrayList<>() : this.leerTodos();
 
     for (Documento existente : documentos) {
       if (existente.getId().equals(documento.getId())) {
@@ -113,7 +100,7 @@ public class RepositorioDocumentoBinario {
     this._validarDocumento(documento);
 
     ArrayList<Documento> documentos = this.leerTodos();
-    boolean estaActualizado = false; 
+    boolean estaActualizado = false;
 
     for (int idx = 0; idx < documentos.size(); idx++) {
       if (documentos.get(idx).getId().equals(documento.getId())) {
@@ -126,7 +113,7 @@ public class RepositorioDocumentoBinario {
     if (!estaActualizado) {
       throw RepositorioExcepcion.documentoNoEncontrado(documento.getId());
     }
-  
+
     this._guardar(documentos);
   }
 
@@ -151,13 +138,8 @@ public class RepositorioDocumentoBinario {
     this._guardar(documentos);
   }
 
-  private ArrayList<Documento> _validarDocumentosLeidos(
-    Object objetoLeido
-  ) {
-    if (
-      objetoLeido == null
-      || objetoLeido.getClass() != ArrayList.class
-    ) {
+  private ArrayList<Documento> _validarDocumentosLeidos(Object objetoLeido) {
+    if (objetoLeido == null || objetoLeido.getClass() != ArrayList.class) {
       throw RepositorioExcepcion.catalogoConFormatoInvalido(this._ruta);
     }
 
@@ -168,47 +150,34 @@ public class RepositorioDocumentoBinario {
     for (int idx = 0; idx < elementos.size(); idx++) {
       Object elemento = elementos.get(idx);
 
-      if (
-        elemento == null
-        || elemento.getClass() != Documento.class
-      ) {
-        throw RepositorioExcepcion.elementoInvalido(
-          this._ruta,
-          idx + 1
-        );
+      if (elemento == null || elemento.getClass() != Documento.class) {
+        throw RepositorioExcepcion.elementoInvalido(this._ruta, idx + 1);
       }
 
       Documento documentoOriginal = (Documento) elemento;
       Documento documentoValidado;
 
       try {
-        documentoValidado = new Documento(
-          documentoOriginal.getId(),
-          documentoOriginal.getTipo(),
-          documentoOriginal.getTitulo(),
-          documentoOriginal.getDescripcion(),
-          documentoOriginal.getGenero(),
-          documentoOriginal.getValoracion(), 
-          documentoOriginal.getPaginas()
-        );
+        documentoValidado =
+            new Documento(
+                documentoOriginal.getId(),
+                documentoOriginal.getTipo(),
+                documentoOriginal.getTitulo(),
+                documentoOriginal.getDescripcion(),
+                documentoOriginal.getGenero(),
+                documentoOriginal.getValoracion(),
+                documentoOriginal.getPaginas());
       } catch (RuntimeException e) {
-        throw RepositorioExcepcion.documentoInvalido(
-          this._ruta,
-          idx + 1,
-          e
-        );
+        throw RepositorioExcepcion.documentoInvalido(this._ruta, idx + 1, e);
       }
-    
+
       if (!ids.add(documentoValidado.getId())) {
-        throw RepositorioExcepcion.idDuplicadoEnCatalogo(
-          this._ruta,
-          documentoValidado.getId()
-        );
+        throw RepositorioExcepcion.idDuplicadoEnCatalogo(this._ruta, documentoValidado.getId());
       }
 
       documentos.add(documentoValidado);
     }
-  
+
     return documentos;
   }
 
@@ -219,20 +188,10 @@ public class RepositorioDocumentoBinario {
     try {
       Files.createDirectories(directorio);
 
-      temporal = Files.createTempFile(
-        directorio,
-        this._ruta.getFileName().toString(),
-        ".tmp"
-      );
+      temporal = Files.createTempFile(directorio, this._ruta.getFileName().toString(), ".tmp");
 
-      try (
-        FileOutputStream archivoTemporal = new FileOutputStream(
-          temporal.toFile()
-        );
-        ObjectOutputStream salida = new ObjectOutputStream(
-          archivoTemporal
-        )
-      ) {
+      try (FileOutputStream archivoTemporal = new FileOutputStream(temporal.toFile());
+          ObjectOutputStream salida = new ObjectOutputStream(archivoTemporal)) {
         salida.writeObject(documentos);
         salida.flush();
         archivoTemporal.getFD().sync();
@@ -255,11 +214,10 @@ public class RepositorioDocumentoBinario {
   private void _reemplazarCatalogo(Path temporal) throws IOException {
     try {
       Files.move(
-        temporal,
-        this._ruta,
-        StandardCopyOption.ATOMIC_MOVE,
-        StandardCopyOption.REPLACE_EXISTING
-      );
+          temporal,
+          this._ruta,
+          StandardCopyOption.ATOMIC_MOVE,
+          StandardCopyOption.REPLACE_EXISTING);
       return;
     } catch (AtomicMoveNotSupportedException e) {
       this._reemplazarConRespaldo(temporal);
@@ -269,41 +227,32 @@ public class RepositorioDocumentoBinario {
   private void _reemplazarConRespaldo(Path temporal) throws IOException {
     Path directorio = this._ruta.toAbsolutePath().getParent();
     boolean hayCatalogoAnterior = Files.exists(this._ruta);
-    Path respaldo = hayCatalogoAnterior
-      ? Files.createTempFile(
-        directorio,
-        this._ruta.getFileName().toString(),
-        ".bak"
-      )
-      : null;
+    Path respaldo =
+        hayCatalogoAnterior
+            ? Files.createTempFile(directorio, this._ruta.getFileName().toString(), ".bak")
+            : null;
     boolean restauradoOReemplazado = false;
 
     try {
       if (hayCatalogoAnterior) {
         Files.copy(
-          this._ruta,
-          respaldo,
-          StandardCopyOption.REPLACE_EXISTING,
-          StandardCopyOption.COPY_ATTRIBUTES
-        );
+            this._ruta,
+            respaldo,
+            StandardCopyOption.REPLACE_EXISTING,
+            StandardCopyOption.COPY_ATTRIBUTES);
       }
 
       try {
-        Files.move(
-          temporal,
-          this._ruta,
-          StandardCopyOption.REPLACE_EXISTING
-        );
+        Files.move(temporal, this._ruta, StandardCopyOption.REPLACE_EXISTING);
         restauradoOReemplazado = true;
       } catch (IOException errorAlReemplazar) {
         if (hayCatalogoAnterior) {
           try {
             Files.copy(
-              respaldo,
-              this._ruta,
-              StandardCopyOption.REPLACE_EXISTING,
-              StandardCopyOption.COPY_ATTRIBUTES
-            );
+                respaldo,
+                this._ruta,
+                StandardCopyOption.REPLACE_EXISTING,
+                StandardCopyOption.COPY_ATTRIBUTES);
             restauradoOReemplazado = true;
           } catch (IOException errorAlRestaurar) {
             errorAlReemplazar.addSuppressed(errorAlRestaurar);
