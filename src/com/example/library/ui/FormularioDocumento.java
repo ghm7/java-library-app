@@ -19,7 +19,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
-/** Formulario para crear y editar documentos. */
 public class FormularioDocumento extends JPanel {
   private final JComboBox<TipoDocumento> _tipo = new JComboBox<>(TipoDocumento.values());
   private final JTextField _titulo = new JTextField(30);

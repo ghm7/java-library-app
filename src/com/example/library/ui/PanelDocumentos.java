@@ -2,12 +2,10 @@ package com.example.library.ui;
 
 import com.example.library.domain.Documento;
 import com.example.library.domain.TipoDocumento;
-import com.example.library.domain.ValidarExcepcion;
 import com.example.library.service.EstadoCargaCatalogo;
 import com.example.library.service.ResultadoCargaCatalogo;
 import com.example.library.service.ServicioCargaCatalogo;
 import com.example.library.service.ServicioDocumento;
-import com.example.library.service.ServicioDocumentoExcepcion;
 import com.example.library.service.ServicioPeriodoDemo;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -27,7 +25,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.Timer;
 
-/** Presentación y acciones Swing; todo acceso a datos pasa por el servicio. */
 public class PanelDocumentos extends JPanel {
   private static final String CATALOGO = "catalogo";
   private static final String DETALLE = "detalle";
@@ -60,20 +57,14 @@ public class PanelDocumentos extends JPanel {
       ServicioDocumento servicio,
       Predicate<Documento> confirmarEliminacion,
       ServicioPeriodoDemo periodoDemo) {
-    if (servicio == null) {
-      throw new IllegalArgumentException("El servicio es obligatorio.");
-    }
-    if (periodoDemo == null) {
-      throw new IllegalArgumentException("El período de demo es obligatorio.");
-    }
-
     _servicio = servicio;
     _carga = new ServicioCargaCatalogo(servicio);
     _periodoDemo = periodoDemo;
     _demoExpirada = _periodoDemo.estaExpirada();
     _confirmarEliminacion =
         confirmarEliminacion == null ? this::_confirmarEliminacion : confirmarEliminacion;
-    _formulario = new FormularioDocumento(this::_guardar, this::_cancelarFormulario);
+    _formulario =
+        new FormularioDocumento(f -> _ejecutarAccion(() -> _guardar(f)), this::_cancelarFormulario);
     _formulario.setEscrituraHabilitada(!_demoExpirada);
     _vigilanteExpiracion = new Timer(1000, e -> _actualizarEstadoDemo());
 
@@ -107,9 +98,10 @@ public class PanelDocumentos extends JPanel {
   private void _ejecutarAccion(Runnable accion) {
     try {
       accion.run();
-    } catch (RuntimeException e) {
-      _mensaje(
-          "No se pudo completar la operación. Actualizá el catálogo e intentá nuevamente.", true);
+    } catch (IllegalArgumentException e) {
+      _mensaje("Revisá los datos: " + e.getMessage(), true);
+    } catch (IllegalStateException e) {
+      _mensaje(e.getMessage(), true);
     }
   }
 
@@ -278,18 +270,22 @@ public class PanelDocumentos extends JPanel {
   }
 
   private void _mostrarDetalle(UUID id, String aviso) {
-    try {
-      Documento documento = _servicio.consultar(id);
+    Documento documento = _consultarParaPantalla(id, aviso);
+    if (documento != null) {
       _construirDetalle(documento);
       _mensaje(aviso, false);
       _mostrarTarjeta(DETALLE);
-    } catch (ServicioDocumentoExcepcion e) {
+    }
+  }
+
+  private Documento _consultarParaPantalla(UUID id, String aviso) {
+    try {
+      return _servicio.consultar(id);
+    } catch (IllegalStateException e) {
       _mostrarCatalogo("");
-      String mensaje =
-          aviso.isEmpty()
-              ? e.getMessage()
-              : aviso + " No se pudo actualizar el detalle. " + e.getMessage();
-      _mensaje(mensaje, true);
+      String detalle = aviso.isEmpty() ? "" : aviso + " No se pudo actualizar el detalle. ";
+      _mensaje(detalle + e.getMessage(), true);
+      return null;
     }
   }
 
@@ -340,13 +336,11 @@ public class PanelDocumentos extends JPanel {
   }
 
   private void _abrirFormulario(UUID id) {
-    try {
-      _formulario.cargar(id == null ? null : _servicio.consultar(id));
+    Documento documento = id == null ? null : _consultarParaPantalla(id, "");
+    if (id == null || documento != null) {
+      _formulario.cargar(documento);
       _mensaje("", false);
       _mostrarTarjeta(FORMULARIO);
-    } catch (ServicioDocumentoExcepcion e) {
-      _mostrarCatalogo("");
-      _mensaje(e.getMessage(), true);
     }
   }
 
@@ -363,16 +357,8 @@ public class PanelDocumentos extends JPanel {
       return;
     }
 
-    try {
-      Documento guardado = _guardarDocumento(formulario);
-      _mostrarDetalle(guardado.getId(), "Documento guardado correctamente.");
-    } catch (ValidarExcepcion e) {
-      _mensaje("Revisá los datos: " + e.getMessage(), true);
-    } catch (ServicioDocumentoExcepcion e) {
-      _mensaje(e.getMessage(), true);
-    } catch (RuntimeException e) {
-      _mensaje("No se pudo guardar el documento. Revisá los datos e intentá nuevamente.", true);
-    }
+    Documento guardado = _guardarDocumento(formulario);
+    _mostrarDetalle(guardado.getId(), "Documento guardado correctamente.");
   }
 
   private Documento _guardarDocumento(FormularioDocumento formulario) {
@@ -389,23 +375,10 @@ public class PanelDocumentos extends JPanel {
   }
 
   private void _eliminar(UUID id) {
-    if (!_puedeEscribir()) {
-      return;
-    }
-
-    try {
-      Documento documento = _servicio.consultar(id);
-      if (!_confirmarEliminacion.test(documento)) {
-        return;
-      }
-
+    Documento documento = _servicio.consultar(id);
+    if (_confirmarEliminacion.test(documento) && _puedeEscribir()) {
       _servicio.eliminar(id);
       _mostrarCatalogo("Documento eliminado correctamente.");
-    } catch (ServicioDocumentoExcepcion e) {
-      _mensaje(e.getMessage(), true);
-    } catch (RuntimeException e) {
-      _mensaje(
-          "No se pudo eliminar el documento. Actualizá el catálogo e intentá nuevamente.", true);
     }
   }
 

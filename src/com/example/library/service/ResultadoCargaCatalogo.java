@@ -2,6 +2,7 @@ package com.example.library.service;
 
 import com.example.library.domain.Documento;
 import java.util.List;
+import java.util.Objects;
 
 public class ResultadoCargaCatalogo {
   private final EstadoCargaCatalogo _estado;
@@ -10,15 +11,7 @@ public class ResultadoCargaCatalogo {
 
   public ResultadoCargaCatalogo(
       EstadoCargaCatalogo estado, List<Documento> documentos, String mensaje) {
-    if (estado == null) {
-      throw new IllegalArgumentException("El estado de carga es obligatorio.");
-    }
-
-    if (documentos == null) {
-      throw new IllegalArgumentException("La lista de documentos es obligatoria.");
-    }
-
-    this._estado = estado;
+    this._estado = Objects.requireNonNull(estado);
     this._documentos = List.copyOf(documentos);
     this._mensaje = mensaje == null ? "" : mensaje;
   }

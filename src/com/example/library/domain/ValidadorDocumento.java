@@ -7,7 +7,7 @@ public class ValidadorDocumento {
 
   public static UUID validarId(UUID id) {
     if (id == null) {
-      throw new ValidarExcepcion("El id es obligatorio.");
+      throw new IllegalArgumentException("El id es obligatorio.");
     }
 
     return id;
@@ -15,7 +15,7 @@ public class ValidadorDocumento {
 
   public static TipoDocumento validarTipo(TipoDocumento tipo) {
     if (tipo == null) {
-      throw new ValidarExcepcion("El tipo es obligatorio.");
+      throw new IllegalArgumentException("El tipo es obligatorio.");
     }
 
     return tipo;
@@ -23,7 +23,7 @@ public class ValidadorDocumento {
 
   public static String validarTitulo(String titulo) {
     if (titulo == null || titulo.isBlank()) {
-      throw new ValidarExcepcion("El titulo es obligatorio.");
+      throw new IllegalArgumentException("El titulo es obligatorio.");
     }
 
     return titulo.trim();
@@ -43,7 +43,7 @@ public class ValidadorDocumento {
 
   private static Integer validarRango(Integer valor, int maximo, String mensaje) {
     if (valor != null && (valor < 1 || valor > maximo)) {
-      throw new ValidarExcepcion(mensaje);
+      throw new IllegalArgumentException(mensaje);
     }
     return valor;
   }
@@ -63,7 +63,7 @@ public class ValidadorDocumento {
     try {
       return Integer.valueOf(texto.trim());
     } catch (NumberFormatException e) {
-      throw new ValidarExcepcion(campo + " debe ser un numero entero.");
+      throw new IllegalArgumentException(campo + " debe ser un numero entero.");
     }
   }
 }
