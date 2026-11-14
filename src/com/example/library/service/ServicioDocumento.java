@@ -4,7 +4,6 @@ import com.example.library.domain.Documento;
 import com.example.library.domain.TipoDocumento;
 import com.example.library.domain.ValidadorDocumento;
 import com.example.library.repository.RepositorioDocumentoBinario;
-import com.example.library.repository.RepositorioExcepcion;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -16,28 +15,16 @@ public class ServicioDocumento {
   }
 
   public ServicioDocumento(RepositorioDocumentoBinario repositorio) {
-    if (repositorio == null) {
-      throw ServicioDocumentoExcepcion.repositorioObligatorio();
-    }
-
     this._repositorio = repositorio;
   }
 
   public ArrayList<Documento> listar() {
-    try {
-      return this._repositorio.leerTodos();
-    } catch (RepositorioExcepcion e) {
-      throw ServicioDocumentoExcepcion.errorAlListar(e);
-    }
+    return _repositorio.leerTodos();
   }
 
   public Documento consultar(UUID id) {
     ValidadorDocumento.validarId(id);
-    try {
-      return this._repositorio.buscarPorId(id);
-    } catch (RepositorioExcepcion e) {
-      throw ServicioDocumentoExcepcion.errorAlConsultar(e);
-    }
+    return _repositorio.buscarPorId(id);
   }
 
   public Documento crear(
@@ -49,12 +36,8 @@ public class ServicioDocumento {
       Integer paginas) {
     Documento documento = Documento.nuevo(tipo, titulo, descripcion, genero, valoracion, paginas);
 
-    try {
-      this._repositorio.crear(documento);
-      return documento;
-    } catch (RepositorioExcepcion e) {
-      throw ServicioDocumentoExcepcion.errorAlCrear(e);
-    }
+    _repositorio.crear(documento);
+    return documento;
   }
 
   public Documento actualizar(
@@ -67,21 +50,13 @@ public class ServicioDocumento {
       Integer paginas) {
     Documento documento = new Documento(id, tipo, titulo, descripcion, genero, valoracion, paginas);
 
-    try {
-      this._repositorio.actualizar(documento);
-      return documento;
-    } catch (RepositorioExcepcion e) {
-      throw ServicioDocumentoExcepcion.errorAlActualizar(e);
-    }
+    _repositorio.actualizar(documento);
+    return documento;
   }
 
   public void eliminar(UUID id) {
     ValidadorDocumento.validarId(id);
 
-    try {
-      this._repositorio.eliminar(id);
-    } catch (RepositorioExcepcion e) {
-      throw ServicioDocumentoExcepcion.errorAlEliminar(e);
-    }
+    _repositorio.eliminar(id);
   }
 }

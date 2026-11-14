@@ -20,7 +20,6 @@ public class TemaGrafico {
     try {
       UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
     } catch (Exception ignored) {
-      // Se conserva el look & feel estándar disponible.
     }
   }
 }

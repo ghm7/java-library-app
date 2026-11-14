@@ -2,8 +2,9 @@ package com.example.library.service;
 
 import com.example.library.domain.Documento;
 import com.example.library.repository.RepositorioDocumentoBinario;
-import com.example.library.repository.RepositorioExcepcion;
+import java.nio.file.NoSuchFileException;
 import java.util.List;
+import java.util.Objects;
 
 public class ServicioCargaCatalogo {
   private final ServicioDocumento _servicioDocumento;
@@ -13,10 +14,7 @@ public class ServicioCargaCatalogo {
   }
 
   public ServicioCargaCatalogo(ServicioDocumento servicioDocumento) {
-    if (servicioDocumento == null) {
-      throw new IllegalArgumentException("El servicio de documentos es obligatorio.");
-    }
-    this._servicioDocumento = servicioDocumento;
+    this._servicioDocumento = Objects.requireNonNull(servicioDocumento);
   }
 
   public ResultadoCargaCatalogo cargarCatalogo() {
@@ -25,24 +23,14 @@ public class ServicioCargaCatalogo {
       String mensaje = documentos.size() + " documentos cargados.";
 
       return new ResultadoCargaCatalogo(EstadoCargaCatalogo.CARGADO, documentos, mensaje);
-    } catch (ServicioDocumentoExcepcion e) {
-      return new ResultadoCargaCatalogo(this._estadoPara(e), List.of(), e.getMessage());
-    } catch (RuntimeException e) {
-      return new ResultadoCargaCatalogo(
-          EstadoCargaCatalogo.INVALIDO,
-          List.of(),
-          "No se pudo cargar el catálogo de documentos. No se realizaron cambios.");
+    } catch (IllegalStateException e) {
+      if (e.getCause() instanceof NoSuchFileException) {
+        return new ResultadoCargaCatalogo(
+            EstadoCargaCatalogo.AUSENTE,
+            List.of(),
+            "No se encontró el catálogo. Podés crear el primer documento para inicializarlo.");
+      }
+      return new ResultadoCargaCatalogo(EstadoCargaCatalogo.INVALIDO, List.of(), e.getMessage());
     }
-  }
-
-  private EstadoCargaCatalogo _estadoPara(ServicioDocumentoExcepcion excepcion) {
-    Throwable causa = excepcion.getCause();
-
-    if (causa instanceof RepositorioExcepcion
-        && ((RepositorioExcepcion) causa).esCatalogoAusente()) {
-      return EstadoCargaCatalogo.AUSENTE;
-    }
-
-    return EstadoCargaCatalogo.INVALIDO;
   }
 }

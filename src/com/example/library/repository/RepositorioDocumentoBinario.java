@@ -1,285 +1,148 @@
 package com.example.library.repository;
 
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 import com.example.library.domain.Documento;
-import java.io.EOFException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InvalidClassException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.ObjectStreamException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class RepositorioDocumentoBinario {
-  private final Path _ruta;
+  private final Path ruta;
 
   public RepositorioDocumentoBinario() {
     this(Path.of("src", "com", "example", "library", "data", "catalog", "libros.dat"));
   }
 
   public RepositorioDocumentoBinario(Path ruta) {
-    if (ruta == null) {
-      throw RepositorioExcepcion.rutaObligatoria();
-    }
-
-    this._ruta = ruta.normalize();
+    this.ruta = ruta.normalize();
   }
 
   public ArrayList<Documento> leerTodos() {
-    if (Files.notExists(this._ruta)) {
-      throw RepositorioExcepcion.catalogoNoEncontrado(this._ruta);
-    }
-
-    if (!Files.isRegularFile(this._ruta)) {
-      throw RepositorioExcepcion.rutaNoEsArchivo(this._ruta);
-    }
-
-    try {
-      if (Files.size(this._ruta) == 0) {
-        throw RepositorioExcepcion.catalogoVacio(this._ruta);
-      }
-    } catch (RepositorioExcepcion e) {
-      throw e;
-    } catch (IOException e) {
-      throw RepositorioExcepcion.errorAlLeer(this._ruta, e);
-    }
-
-    try (ObjectInputStream entrada =
-        new ObjectInputStream(Files.newInputStream(this._ruta, StandardOpenOption.READ)); ) {
-      Object objetoLeido = entrada.readObject();
-      return this._validarDocumentosLeidos(objetoLeido);
-    } catch (InvalidClassException | ClassNotFoundException e) {
-      throw RepositorioExcepcion.catalogoIncompatible(this._ruta, e);
-    } catch (EOFException | ObjectStreamException e) {
-      throw RepositorioExcepcion.catalogoCorrupto(this._ruta, e);
-    } catch (RepositorioExcepcion e) {
-      throw e;
-    } catch (IOException e) {
-      throw RepositorioExcepcion.errorAlLeer(this._ruta, e);
-    } catch (RuntimeException e) {
-      throw RepositorioExcepcion.catalogoCorrupto(this._ruta, e);
-    }
+    return new ArrayList<>(leerCatalogo().values());
   }
 
   public Documento buscarPorId(UUID id) {
-    this._validarId(id);
-
-    for (Documento documento : this.leerTodos()) {
-      if (documento.getId().equals(id)) {
-        return documento;
-      }
-    }
-
-    throw RepositorioExcepcion.documentoNoEncontrado(id);
+    return exigirDocumento(leerCatalogo().get(id), id);
   }
 
   public void crear(Documento documento) {
-    this._validarDocumento(documento);
-
-    ArrayList<Documento> documentos =
-        Files.notExists(this._ruta) ? new ArrayList<>() : this.leerTodos();
-
-    for (Documento existente : documentos) {
-      if (existente.getId().equals(documento.getId())) {
-        throw RepositorioExcepcion.documentoDuplicado(documento.getId());
-      }
+    Map<UUID, Documento> catalogo = Files.notExists(ruta) ? new LinkedHashMap<>() : leerCatalogo();
+    if (catalogo.putIfAbsent(documento.getId(), documento) != null) {
+      throw new IllegalStateException("Ya existe un documento con id " + documento.getId() + ".");
     }
-
-    documentos.add(documento);
-    this._guardar(documentos);
+    guardar(catalogo.values());
   }
 
   public void actualizar(Documento documento) {
-    this._validarDocumento(documento);
-
-    ArrayList<Documento> documentos = this.leerTodos();
-    boolean estaActualizado = false;
-
-    for (int idx = 0; idx < documentos.size(); idx++) {
-      if (documentos.get(idx).getId().equals(documento.getId())) {
-        documentos.set(idx, documento);
-        estaActualizado = true;
-        break;
-      }
-    }
-
-    if (!estaActualizado) {
-      throw RepositorioExcepcion.documentoNoEncontrado(documento.getId());
-    }
-
-    this._guardar(documentos);
+    Map<UUID, Documento> catalogo = leerCatalogo();
+    UUID id = documento.getId();
+    exigirDocumento(catalogo.replace(id, documento), id);
+    guardar(catalogo.values());
   }
 
   public void eliminar(UUID id) {
-    this._validarId(id);
-
-    ArrayList<Documento> documentos = this.leerTodos();
-    boolean estaEliminado = false;
-
-    for (int idx = 0; idx < documentos.size(); idx++) {
-      if (documentos.get(idx).getId().equals(id)) {
-        documentos.remove(idx);
-        estaEliminado = true;
-        break;
-      }
-    }
-
-    if (!estaEliminado) {
-      throw RepositorioExcepcion.documentoNoEncontrado(id);
-    }
-
-    this._guardar(documentos);
+    Map<UUID, Documento> catalogo = leerCatalogo();
+    exigirDocumento(catalogo.remove(id), id);
+    guardar(catalogo.values());
   }
 
-  private ArrayList<Documento> _validarDocumentosLeidos(Object objetoLeido) {
-    if (objetoLeido == null || objetoLeido.getClass() != ArrayList.class) {
-      throw RepositorioExcepcion.catalogoConFormatoInvalido(this._ruta);
+  private Documento exigirDocumento(Documento documento, UUID id) {
+    if (documento == null) {
+      throw new IllegalStateException("No existe un documento con id " + id + ".");
     }
-
-    ArrayList<?> elementos = (ArrayList<?>) objetoLeido;
-    ArrayList<Documento> documentos = new ArrayList<>();
-    HashSet<UUID> ids = new HashSet<>();
-
-    for (int idx = 0; idx < elementos.size(); idx++) {
-      Object elemento = elementos.get(idx);
-
-      if (elemento == null || elemento.getClass() != Documento.class) {
-        throw RepositorioExcepcion.elementoInvalido(this._ruta, idx + 1);
-      }
-
-      Documento documentoOriginal = (Documento) elemento;
-      Documento documentoValidado;
-
-      try {
-        documentoValidado =
-            new Documento(
-                documentoOriginal.getId(),
-                documentoOriginal.getTipo(),
-                documentoOriginal.getTitulo(),
-                documentoOriginal.getDescripcion(),
-                documentoOriginal.getGenero(),
-                documentoOriginal.getValoracion(),
-                documentoOriginal.getPaginas());
-      } catch (RuntimeException e) {
-        throw RepositorioExcepcion.documentoInvalido(this._ruta, idx + 1, e);
-      }
-
-      if (!ids.add(documentoValidado.getId())) {
-        throw RepositorioExcepcion.idDuplicadoEnCatalogo(this._ruta, documentoValidado.getId());
-      }
-
-      documentos.add(documentoValidado);
-    }
-
-    return documentos;
+    return documento;
   }
 
-  private void _guardar(ArrayList<Documento> documentos) {
-    Path directorio = this._ruta.toAbsolutePath().getParent();
-    Path temporal = null;
+  private Map<UUID, Documento> leerCatalogo() {
+    try (var archivo = Files.newInputStream(ruta);
+        var entrada = new ObjectInputStream(archivo)) {
+      Object contenido = entrada.readObject();
+      if (contenido == null || contenido.getClass() != ArrayList.class) {
+        throw new IOException("Se esperaba una lista de documentos.");
+      }
+      Map<UUID, Documento> catalogo = new LinkedHashMap<>();
+      for (Object elemento : (ArrayList<?>) contenido) {
+        if (elemento == null || elemento.getClass() != Documento.class) {
+          throw new IOException("La lista contiene un elemento inválido.");
+        }
+        Documento documento = ((Documento) elemento).copiaValidada();
+        if (catalogo.putIfAbsent(documento.getId(), documento) != null) {
+          throw new IOException("El catálogo contiene un id duplicado.");
+        }
+      }
+      return catalogo;
+    } catch (IOException | ClassNotFoundException | IllegalArgumentException e) {
+      throw new IllegalStateException(
+          "No se pudo leer el catálogo. Puede estar corrupto o ser inaccesible.", e);
+    }
+  }
 
+  private void guardar(Collection<Documento> documentos) {
+    Path directorio = ruta.toAbsolutePath().getParent();
     try {
       Files.createDirectories(directorio);
-
-      temporal = Files.createTempFile(directorio, this._ruta.getFileName().toString(), ".tmp");
-
-      try (FileOutputStream archivoTemporal = new FileOutputStream(temporal.toFile());
-          ObjectOutputStream salida = new ObjectOutputStream(archivoTemporal)) {
-        salida.writeObject(documentos);
-        salida.flush();
-        archivoTemporal.getFD().sync();
-      }
-
-      this._reemplazarCatalogo(temporal);
-      temporal = null;
-    } catch (IOException e) {
-      throw RepositorioExcepcion.errorAlPersistir(this._ruta, e);
-    } finally {
-      if (temporal != null) {
-        try {
-          Files.deleteIfExists(temporal);
-        } catch (IOException ignored) {
+      Path temporal = Files.createTempFile(directorio, "catalogo-", ".tmp");
+      try {
+        try (var archivo = new FileOutputStream(temporal.toFile());
+            var salida = new ObjectOutputStream(archivo)) {
+          salida.writeObject(new ArrayList<>(documentos));
+          salida.flush();
+          archivo.getFD().sync();
         }
+        reemplazarCatalogo(temporal);
+      } finally {
+        limpiarTemporal(temporal);
       }
+    } catch (IOException e) {
+      throw new IllegalStateException("No se pudo guardar el catálogo.", e);
     }
   }
 
-  private void _reemplazarCatalogo(Path temporal) throws IOException {
+  private void reemplazarCatalogo(Path temporal) throws IOException {
     try {
-      Files.move(
-          temporal,
-          this._ruta,
-          StandardCopyOption.ATOMIC_MOVE,
-          StandardCopyOption.REPLACE_EXISTING);
+      Files.move(temporal, ruta, ATOMIC_MOVE, REPLACE_EXISTING);
       return;
     } catch (AtomicMoveNotSupportedException e) {
-      this._reemplazarConRespaldo(temporal);
     }
-  }
-
-  private void _reemplazarConRespaldo(Path temporal) throws IOException {
-    Path directorio = this._ruta.toAbsolutePath().getParent();
-    boolean hayCatalogoAnterior = Files.exists(this._ruta);
-    Path respaldo =
-        hayCatalogoAnterior
-            ? Files.createTempFile(directorio, this._ruta.getFileName().toString(), ".bak")
-            : null;
-    boolean restauradoOReemplazado = false;
-
+    if (Files.notExists(ruta)) {
+      Files.move(temporal, ruta);
+      return;
+    }
+    Path respaldo = Files.createTempFile(temporal.getParent(), "catalogo-", ".bak");
+    boolean restaurando = false;
     try {
-      if (hayCatalogoAnterior) {
-        Files.copy(
-            this._ruta,
-            respaldo,
-            StandardCopyOption.REPLACE_EXISTING,
-            StandardCopyOption.COPY_ATTRIBUTES);
-      }
-
+      Files.copy(ruta, respaldo, REPLACE_EXISTING, COPY_ATTRIBUTES);
       try {
-        Files.move(temporal, this._ruta, StandardCopyOption.REPLACE_EXISTING);
-        restauradoOReemplazado = true;
-      } catch (IOException errorAlReemplazar) {
-        if (hayCatalogoAnterior) {
-          try {
-            Files.copy(
-                respaldo,
-                this._ruta,
-                StandardCopyOption.REPLACE_EXISTING,
-                StandardCopyOption.COPY_ATTRIBUTES);
-            restauradoOReemplazado = true;
-          } catch (IOException errorAlRestaurar) {
-            errorAlReemplazar.addSuppressed(errorAlRestaurar);
-          }
-        }
-
-        throw errorAlReemplazar;
+        Files.move(temporal, ruta, REPLACE_EXISTING);
+      } catch (IOException e) {
+        restaurando = true;
+        Files.copy(respaldo, ruta, REPLACE_EXISTING, COPY_ATTRIBUTES);
+        restaurando = false;
+        throw e;
       }
     } finally {
-      if (respaldo != null && restauradoOReemplazado) {
-        try {
-          Files.deleteIfExists(respaldo);
-        } catch (IOException ignored) {
-        }
+      if (!restaurando) {
+        limpiarTemporal(respaldo);
       }
     }
   }
 
-  private void _validarDocumento(Documento documento) {
-    if (documento == null) {
-      throw RepositorioExcepcion.documentoObligatorio();
-    }
-  }
-
-  private void _validarId(UUID id) {
-    if (id == null) {
-      throw RepositorioExcepcion.idObligatorio();
+  private void limpiarTemporal(Path archivo) {
+    try {
+      Files.deleteIfExists(archivo);
+    } catch (IOException ignored) {
     }
   }
 }
