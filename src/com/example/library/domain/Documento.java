@@ -3,83 +3,45 @@ package com.example.library.domain;
 import java.io.Serializable;
 import java.util.UUID;
 
-public class Documento implements Serializable {
+public record Documento(UUID _id, TipoDocumento _tipo, String _titulo, String _descripcion,
+                        String _genero, Integer _valoracion, Integer _paginas) implements Serializable {
   private static final long serialVersionUID = 1L;
+  private static final String VALORACION = "La valoración debe estar entre 1 y 5";
+  private static final String PAGINAS = "La cantidad de páginas debe estar entre 1 y 999.";
 
-  private final UUID _id;
-  private final TipoDocumento _tipo;
-  private final String _titulo;
-  private final String _descripcion;
-  private final String _genero;
-  private final Integer _valoracion;
-  private final Integer _paginas;
-
-  public Documento(
-      UUID id,
-      TipoDocumento tipo,
-      String titulo,
-      String descripcion,
-      String genero,
-      Integer valoracion,
-      Integer paginas) {
-    this._id = ValidadorDocumento.validarId(id);
-    this._tipo = ValidadorDocumento.validarTipo(tipo);
-    this._titulo = ValidadorDocumento.validarTitulo(titulo);
-    this._descripcion = ValidadorDocumento.textoOpcional(descripcion);
-    this._genero = ValidadorDocumento.textoOpcional(genero);
-    this._valoracion = ValidadorDocumento.validarValoracion(valoracion);
-    this._paginas = ValidadorDocumento.validarPaginas(paginas);
+  public Documento {
+    if (_id == null) throw new IllegalArgumentException("El id es obligatorio.");
+    if (_tipo == null) throw new IllegalArgumentException("El tipo es obligatorio.");
+    if (_titulo == null || _titulo.isBlank()) throw new IllegalArgumentException("El titulo es obligatorio.");
+    _titulo = _titulo.trim();
+    _descripcion = opcional(_descripcion);
+    _genero = opcional(_genero);
+    validarRango(_valoracion, 5, VALORACION);
+    validarRango(_paginas, 999, PAGINAS);
   }
 
-  public static Documento nuevo(
-      TipoDocumento tipo,
-      String titulo,
-      String descripcion,
-      String genero,
-      Integer valoracion,
-      Integer paginas) {
-    return new Documento(UUID.randomUUID(), tipo, titulo, descripcion, genero, valoracion, paginas);
+  private static String opcional(String texto) {
+    return texto == null || texto.isBlank() ? null : texto;
   }
 
-  public Documento actualizar(
-      TipoDocumento tipo,
-      String titulo,
-      String descripcion,
-      String genero,
-      Integer valoracion,
-      Integer paginas) {
-    return new Documento(this._id, tipo, titulo, descripcion, genero, valoracion, paginas);
+  private static Integer validarRango(Integer valor, int maximo, String mensaje) {
+    if (valor != null && (valor < 1 || valor > maximo)) throw new IllegalArgumentException(mensaje);
+    return valor;
   }
 
-  public Documento copiaValidada() {
-    return actualizar(_tipo, _titulo, _descripcion, _genero, _valoracion, _paginas);
+  public static Documento desdeFormulario(UUID id, TipoDocumento tipo, String titulo, String descripcion,
+                                          String genero, String valoracion, String paginas) {
+    return new Documento(id, tipo, titulo, descripcion, genero,
+        validarRango(entero(valoracion, "La valoración"), 5, VALORACION),
+        validarRango(entero(paginas, "La cantidad de páginas"), 999, PAGINAS));
   }
 
-  public UUID getId() {
-    return this._id;
-  }
-
-  public TipoDocumento getTipo() {
-    return this._tipo;
-  }
-
-  public String getTitulo() {
-    return this._titulo;
-  }
-
-  public String getDescripcion() {
-    return this._descripcion;
-  }
-
-  public String getGenero() {
-    return this._genero;
-  }
-
-  public Integer getValoracion() {
-    return this._valoracion;
-  }
-
-  public Integer getPaginas() {
-    return this._paginas;
+  private static Integer entero(String texto, String nombre) {
+    if (texto.isBlank()) return null;
+    try {
+      return Integer.valueOf(texto.trim());
+    } catch (NumberFormatException error) {
+      throw new IllegalArgumentException(nombre + " debe ser un numero entero.");
+    }
   }
 }

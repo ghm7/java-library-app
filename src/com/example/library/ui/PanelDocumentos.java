@@ -1,397 +1,264 @@
 package com.example.library.ui;
 
-import com.example.library.domain.Documento;
-import com.example.library.domain.TipoDocumento;
-import com.example.library.service.EstadoCargaCatalogo;
-import com.example.library.service.ResultadoCargaCatalogo;
-import com.example.library.service.ServicioCargaCatalogo;
-import com.example.library.service.ServicioDocumento;
+import com.example.library.domain.*;
+import com.example.library.repository.RepositorioDocumentoBinario;
 import com.example.library.service.ServicioPeriodoDemo;
-import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.FlowLayout;
-import java.awt.GridBagLayout;
-import java.awt.GridLayout;
-import java.util.ArrayList;
-import java.util.List;
+import java.awt.*;
+import java.nio.file.NoSuchFileException;
+import java.util.Objects;
 import java.util.UUID;
-import java.util.function.Predicate;
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.Timer;
+import javax.swing.*;
+import javax.swing.text.JTextComponent;
+import static java.awt.BorderLayout.*;
+import static javax.swing.BorderFactory.*;
 
 public class PanelDocumentos extends JPanel {
-  private static final String CATALOGO = "catalogo";
-  private static final String DETALLE = "detalle";
-  private static final String FORMULARIO = "formulario";
+  public static final Color CREMA = new Color(0xFFF8ED), GRAFITO = new Color(0x2F2F33);
+  public static final Font TITULO = new Font("SansSerif", Font.BOLD, 26);
+  private static final Font NORMAL = new Font("SansSerif", Font.PLAIN, 15);
+  private final RepositorioDocumentoBinario catalogo;
+  private final ServicioPeriodoDemo demo;
+  private final JPanel pantalla = panel(new BorderLayout(0, 12));
+  private final JTextArea mensaje = texto("", 1);
+  private final Timer reloj = new Timer(1000, e -> comprobarDemo());
+  private boolean expirada, avisoMostrado;
 
-  private final ServicioDocumento _servicio;
-  private final ServicioCargaCatalogo _carga;
-  private final CardLayout _cards = new CardLayout();
-  private final JPanel _contenido = Interfaz.panel(_cards);
-  private final JPanel _catalogo = Interfaz.panel(new BorderLayout(0, 12));
-  private final JPanel _detalle = Interfaz.panel(new BorderLayout(0, 12));
-  private final FormularioDocumento _formulario;
-  private final JTextArea _mensaje = Interfaz.texto("");
-  private final Predicate<Documento> _confirmarEliminacion;
-  private final ServicioPeriodoDemo _periodoDemo;
-  private final List<JButton> _accionesEscritura = new ArrayList<>();
-  private final Timer _vigilanteExpiracion;
-  private boolean _demoExpirada;
-  private boolean _avisoExpiracionMostrado;
-
-  public PanelDocumentos(ServicioDocumento servicio) {
-    this(servicio, null, new ServicioPeriodoDemo());
+  public PanelDocumentos(RepositorioDocumentoBinario catalogo, ServicioPeriodoDemo demo) {
+    super(new BorderLayout(0, 12));
+    this.catalogo = catalogo;
+    this.demo = demo;
+    expirada = demo.estaExpirada();
+    setBackground(CREMA);
+    setBorder(createEmptyBorder(20, 24, 20, 24));
+    mensaje.setName("mensaje");
+    mensaje.getAccessibleContext().setAccessibleName("Estado de la operación");
+    add(pantalla, CENTER);
+    add(mensaje, SOUTH);
+    mostrarCatalogo("");
   }
 
-  PanelDocumentos(ServicioDocumento servicio, Predicate<Documento> confirmarEliminacion) {
-    this(servicio, confirmarEliminacion, new ServicioPeriodoDemo());
-  }
-
-  PanelDocumentos(
-      ServicioDocumento servicio,
-      Predicate<Documento> confirmarEliminacion,
-      ServicioPeriodoDemo periodoDemo) {
-    _servicio = servicio;
-    _carga = new ServicioCargaCatalogo(servicio);
-    _periodoDemo = periodoDemo;
-    _demoExpirada = _periodoDemo.estaExpirada();
-    _confirmarEliminacion =
-        confirmarEliminacion == null ? this::_confirmarEliminacion : confirmarEliminacion;
-    _formulario =
-        new FormularioDocumento(f -> _ejecutarAccion(() -> _guardar(f)), this::_cancelarFormulario);
-    _formulario.setEscrituraHabilitada(!_demoExpirada);
-    _vigilanteExpiracion = new Timer(1000, e -> _actualizarEstadoDemo());
-
-    _configurarPanel();
-    _mostrarCatalogo("");
-  }
-
-  private void _configurarPanel() {
-    setLayout(new BorderLayout(0, 12));
-    setBackground(TemaGrafico.CREMA);
-    setBorder(BorderFactory.createEmptyBorder(20, 24, 20, 24));
-
-    _contenido.add(_catalogo, CATALOGO);
-    _contenido.add(_detalle, DETALLE);
-    _contenido.add(_formulario, FORMULARIO);
-
-    _mensaje.setName("mensaje");
-    _mensaje.getAccessibleContext().setAccessibleName("Estado de la operación");
-
-    add(_contenido, BorderLayout.CENTER);
-    add(_mensaje, BorderLayout.SOUTH);
-  }
-
-  private JButton _boton(String texto, Runnable accion) {
-    JButton boton = Interfaz.botonPrimario(texto);
-    boton.addActionListener(e -> _ejecutarAccion(accion));
-
-    return boton;
-  }
-
-  private void _ejecutarAccion(Runnable accion) {
-    try {
-      accion.run();
-    } catch (IllegalArgumentException e) {
-      _mensaje("Revisá los datos: " + e.getMessage(), true);
-    } catch (IllegalStateException e) {
-      _mensaje(e.getMessage(), true);
-    }
-  }
-
-  private JButton _botonEscritura(String texto, Runnable accion) {
-    JButton boton =
-        _boton(
-            texto,
-            () -> {
-              if (_puedeEscribir()) {
-                accion.run();
-              }
-            });
-    _accionesEscritura.add(boton);
-    boton.setEnabled(!_demoExpirada);
-
-    return boton;
-  }
-
-  private boolean _puedeEscribir() {
-    _actualizarEstadoDemo();
-    return !_demoExpirada;
-  }
-
-  private void _actualizarEstadoDemo() {
-    if (!_demoExpirada && _periodoDemo.estaExpirada()) {
-      _demoExpirada = true;
-      _accionesEscritura.forEach(boton -> boton.setEnabled(false));
-      _formulario.setEscrituraHabilitada(false);
-      _mostrarCatalogo("");
-    }
-
-    if (_demoExpirada) {
-      _notificarExpiracion();
-    }
-  }
-
-  private void _notificarExpiracion() {
-    if (_avisoExpiracionMostrado || !isShowing()) {
-      return;
-    }
-
-    _avisoExpiracionMostrado = true;
-    JOptionPane.showMessageDialog(
-        this,
-        "El período de prueba de 30 minutos finalizó. Podés seguir "
-            + "consultando el catálogo, pero no crear, editar ni eliminar documentos.",
-        "Demo expirada",
-        JOptionPane.INFORMATION_MESSAGE);
-  }
-
-  private boolean _confirmarEliminacion(Documento documento) {
-    JTextArea pregunta =
-        Interfaz.texto(
-            "¿Eliminar «" + documento.getTitulo() + "»? Esta acción no se puede deshacer.");
-    pregunta.setColumns(45);
-    pregunta.setRows(4);
-
-    int opcion =
-        JOptionPane.showOptionDialog(
-            this,
-            new JScrollPane(pregunta),
-            "Confirmar eliminación",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.WARNING_MESSAGE,
-            null,
-            new String[] {"Eliminar", "Cancelar"},
-            "Cancelar");
-
-    return opcion == JOptionPane.YES_OPTION;
-  }
-
-  private void _mensaje(String texto, boolean error) {
-    _mensaje.setForeground(error ? TemaGrafico.CORAL_OSCURO : TemaGrafico.GRAFITO);
-    _mensaje.setText(texto);
-  }
-
-  private void _mostrarCatalogo(String aviso) {
-    ResultadoCargaCatalogo resultado = _carga.cargarCatalogo();
-    _accionesEscritura.clear();
-    _catalogo.removeAll();
-    _catalogo.add(_crearCabeceraCatalogo(resultado), BorderLayout.NORTH);
-
-    if (resultado.getEstado() == EstadoCargaCatalogo.CARGADO) {
-      _mostrarCatalogoCargado(resultado, aviso);
-    } else {
-      _mostrarErrorCatalogo(resultado, aviso);
-    }
-
-    _mostrarTarjeta(CATALOGO);
-  }
-
-  private JPanel _crearCabeceraCatalogo(ResultadoCargaCatalogo resultado) {
-    JPanel cabecera = Interfaz.panel(new BorderLayout(12, 0));
-    cabecera.add(Interfaz.titulo("Catálogo"), BorderLayout.WEST);
-
-    JButton crear = _botonEscritura("Nuevo documento", () -> _abrirFormulario(null));
-    crear.setEnabled(!_demoExpirada && resultado.getEstado() != EstadoCargaCatalogo.INVALIDO);
-
-    if (_demoExpirada) {
-      cabecera.add(
-          Interfaz.subtitulo("Demo expirada: solo podés consultar el catálogo."),
-          BorderLayout.CENTER);
-    }
-
-    JPanel acciones = Interfaz.panel(new FlowLayout());
-    acciones.add(crear);
-    acciones.add(_boton("Actualizar catálogo", () -> _mostrarCatalogo("")));
-    cabecera.add(acciones, BorderLayout.EAST);
-
-    return cabecera;
-  }
-
-  private void _mostrarErrorCatalogo(ResultadoCargaCatalogo resultado, String aviso) {
-    String titulo =
-        resultado.getEstado() == EstadoCargaCatalogo.AUSENTE
-            ? "Catálogo no disponible"
-            : "Archivo de catálogo inválido o ilegible";
-    _catalogo.add(Interfaz.titulo(titulo), BorderLayout.CENTER);
-    _mensaje((aviso.isEmpty() ? "" : aviso + " ") + resultado.getMensaje(), true);
-  }
-
-  private void _mostrarCatalogoCargado(ResultadoCargaCatalogo resultado, String aviso) {
-    List<Documento> documentos = resultado.getDocumentos();
-
-    JComponent contenido =
-        documentos.isEmpty()
-            ? Interfaz.texto(
-                "El catálogo está vacío. Agregá el primer documento con «Nuevo documento».")
-            : _crearListaDocumentos(documentos);
-    _catalogo.add(contenido, BorderLayout.CENTER);
-    _mensaje(aviso.isEmpty() ? resultado.getMensaje() : aviso, false);
-  }
-
-  private JScrollPane _crearListaDocumentos(List<Documento> documentos) {
-    JPanel tarjetas = Interfaz.panel(new GridLayout(0, 1, 0, 12));
-
-    for (Documento documento : documentos) {
-      tarjetas.add(_crearTarjetaDocumento(documento));
-    }
-
-    JScrollPane scroll = Interfaz.conDesplazamiento(tarjetas);
-    scroll.getVerticalScrollBar().setUnitIncrement(20);
-    scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-
-    return scroll;
-  }
-
-  private JPanel _crearTarjetaDocumento(Documento documento) {
-    JPanel tarjeta = Interfaz.superficie();
-    tarjeta.setLayout(new BorderLayout(16, 8));
-    tarjeta.add(Interfaz.subtitulo(Interfaz.nombreTipo(documento.getTipo())), BorderLayout.NORTH);
-
-    JTextArea titulo = Interfaz.texto(documento.getTitulo());
-    titulo.setRows(2);
-    tarjeta.add(titulo, BorderLayout.CENTER);
-    tarjeta.add(
-        _boton("Ver detalle", () -> _mostrarDetalle(documento.getId(), "")), BorderLayout.EAST);
-
-    return tarjeta;
-  }
-
-  private void _mostrarTarjeta(String nombre) {
-    _cards.show(_contenido, nombre);
-    revalidate();
-    repaint();
-  }
-
-  private void _mostrarDetalle(UUID id, String aviso) {
-    Documento documento = _consultarParaPantalla(id, aviso);
-    if (documento != null) {
-      _construirDetalle(documento);
-      _mensaje(aviso, false);
-      _mostrarTarjeta(DETALLE);
-    }
-  }
-
-  private Documento _consultarParaPantalla(UUID id, String aviso) {
-    try {
-      return _servicio.consultar(id);
-    } catch (IllegalStateException e) {
-      _mostrarCatalogo("");
-      String detalle = aviso.isEmpty() ? "" : aviso + " No se pudo actualizar el detalle. ";
-      _mensaje(detalle + e.getMessage(), true);
-      return null;
-    }
-  }
-
-  private void _construirDetalle(Documento documento) {
-    _accionesEscritura.clear();
-    _detalle.removeAll();
-    _detalle.add(Interfaz.titulo("Detalle del documento"), BorderLayout.NORTH);
-    _detalle.add(_crearCamposDetalle(documento), BorderLayout.CENTER);
-    _detalle.add(_crearAccionesDetalle(documento.getId()), BorderLayout.SOUTH);
-  }
-
-  private JScrollPane _crearCamposDetalle(Documento documento) {
-    JPanel campos = Interfaz.superficie();
-
-    campos.setLayout(new GridBagLayout());
-    _agregarDetalle(campos, "Tipo", Interfaz.nombreTipo(documento.getTipo()), 1);
-    _agregarDetalle(campos, "Título", documento.getTitulo(), 2);
-    _agregarDetalle(campos, "Descripción", documento.getDescripcion(), 5);
-    _agregarDetalle(campos, "Género", documento.getGenero(), 1);
-    _agregarDetalle(campos, "Valoración", documento.getValoracion(), 1);
-    _agregarDetalle(campos, "Páginas", documento.getPaginas(), 1);
-
-    JScrollPane scroll = Interfaz.conDesplazamiento(campos);
-    scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-
-    return scroll;
-  }
-
-  private JPanel _crearAccionesDetalle(UUID id) {
-    JPanel acciones = Interfaz.panel(new FlowLayout());
-    acciones.add(_boton("Volver al catálogo", () -> _mostrarCatalogo("")));
-    acciones.add(_botonEscritura("Editar", () -> _abrirFormulario(id)));
-    acciones.add(_botonEscritura("Eliminar", () -> _eliminar(id)));
-
-    return acciones;
-  }
-
-  private void _agregarDetalle(JPanel campos, String nombre, Object valor, int filas) {
-    JTextArea texto = Interfaz.texto(valor == null ? "Sin especificar" : valor.toString());
-    texto.getAccessibleContext().setAccessibleName(nombre);
-
-    texto.setRows(filas);
-
-    JScrollPane scroll = new JScrollPane(texto);
-    scroll.setBorder(BorderFactory.createEmptyBorder());
-
-    Interfaz.agregarFila(campos, Interfaz.subtitulo(nombre), scroll);
-  }
-
-  private void _abrirFormulario(UUID id) {
-    Documento documento = id == null ? null : _consultarParaPantalla(id, "");
-    if (id == null || documento != null) {
-      _formulario.cargar(documento);
-      _mensaje("", false);
-      _mostrarTarjeta(FORMULARIO);
-    }
-  }
-
-  private void _cancelarFormulario() {
-    if (_formulario.getId() == null) {
-      _mostrarCatalogo("");
-    } else {
-      _mostrarDetalle(_formulario.getId(), "");
-    }
-  }
-
-  private void _guardar(FormularioDocumento formulario) {
-    if (!_puedeEscribir()) {
-      return;
-    }
-
-    Documento guardado = _guardarDocumento(formulario);
-    _mostrarDetalle(guardado.getId(), "Documento guardado correctamente.");
-  }
-
-  private Documento _guardarDocumento(FormularioDocumento formulario) {
-    UUID id = formulario.getId();
-    TipoDocumento tipo = formulario.getTipo();
-    String titulo = formulario.getTitulo();
-    String descripcion = formulario.getDescripcion();
-    String genero = formulario.getGenero();
-    Integer valoracion = formulario.getValoracion();
-    Integer paginas = formulario.getPaginas();
-    return id == null
-        ? _servicio.crear(tipo, titulo, descripcion, genero, valoracion, paginas)
-        : _servicio.actualizar(id, tipo, titulo, descripcion, genero, valoracion, paginas);
-  }
-
-  private void _eliminar(UUID id) {
-    Documento documento = _servicio.consultar(id);
-    if (_confirmarEliminacion.test(documento) && _puedeEscribir()) {
-      _servicio.eliminar(id);
-      _mostrarCatalogo("Documento eliminado correctamente.");
-    }
-  }
-
-  @Override
-  public void addNotify() {
+  @Override public void addNotify() {
     super.addNotify();
-    _vigilanteExpiracion.start();
-    _actualizarEstadoDemo();
+    reloj.start();
+    comprobarDemo();
+  }
+  @Override public void removeNotify() {
+    reloj.stop();
+    super.removeNotify();
   }
 
-  @Override
-  public void removeNotify() {
-    _vigilanteExpiracion.stop();
-    super.removeNotify();
+  private boolean comprobarDemo() {
+    if (!expirada && demo.estaExpirada()) {
+      expirada = true;
+      mostrarCatalogo("");
+    }
+    if (expirada && !avisoMostrado && isShowing()) {
+      avisoMostrado = true;
+      JOptionPane.showMessageDialog(this, "El período de prueba de 30 minutos finalizó. Podés seguir "
+          + "consultando el catálogo, pero no crear, editar ni eliminar documentos.",
+          "Demo expirada", JOptionPane.INFORMATION_MESSAGE);
+    }
+    return !expirada;
+  }
+
+  private static JPanel panel(LayoutManager layout) {
+    JPanel panel = new JPanel(layout);
+    panel.setOpaque(false);
+    return panel;
+  }
+  private static JLabel etiqueta(String nombre, boolean titulo) {
+    JLabel etiqueta = new JLabel(nombre);
+    etiqueta.setFont(titulo ? TITULO : NORMAL);
+    etiqueta.setForeground(titulo ? GRAFITO : new Color(0x6E6A67));
+    return etiqueta;
+  }
+  private static JTextArea texto(String valor, int filas) {
+    JTextArea area = new JTextArea(valor, filas, 0);
+    area.setLineWrap(true);
+    area.setWrapStyleWord(true);
+    area.setEditable(false);
+    area.setOpaque(false);
+    area.setFont(NORMAL);
+    area.setForeground(GRAFITO);
+    return area;
+  }
+  private static JPanel superficie(LayoutManager layout) {
+    JPanel panel = new JPanel(layout);
+    panel.setBackground(Color.WHITE);
+    panel.setBorder(createCompoundBorder(createLineBorder(new Color(0xE7DDD2)), createEmptyBorder(28, 28, 28, 28)));
+    return panel;
+  }
+  private static JScrollPane desplazar(JComponent contenido, boolean horizontal) {
+    JPanel marco = panel(new BorderLayout());
+    marco.add(contenido, NORTH);
+    JScrollPane scroll = new JScrollPane(marco);
+    if (!horizontal) scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+    return scroll;
+  }
+  private JPanel acciones(JButton... botones) {
+    JPanel barra = panel(new FlowLayout());
+    for (JButton boton : botones) barra.add(boton);
+    return barra;
+  }
+  private JButton boton(String nombre, boolean escritura, Runnable accion) {
+    JButton boton = new JButton(nombre);
+    if (!nombre.equals("Cancelar")) {
+      boton.setBackground(new Color(0xE97862));
+      boton.setForeground(GRAFITO);
+      boton.setFont(new Font("SansSerif", Font.BOLD, 14));
+      boton.setBorder(createEmptyBorder(10, 16, 10, 16));
+      boton.setFocusPainted(false);
+      boton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+    }
+    boton.setEnabled(!escritura || !expirada);
+    boton.addActionListener(e -> {
+      try {
+        if (!escritura || comprobarDemo()) accion.run();
+      } catch (IllegalArgumentException error) {
+        estado("Revisá los datos: " + error.getMessage(), true);
+      } catch (IllegalStateException error) {
+        estado(error.getMessage(), true);
+      }
+    });
+    return boton;
+  }
+  private void estado(String aviso, boolean error) {
+    mensaje.setText(aviso);
+    mensaje.setForeground(error ? new Color(0xC95745) : GRAFITO);
+    pantalla.revalidate();
+    pantalla.repaint();
+  }
+
+  private void mostrarCatalogo(String aviso) {
+    pantalla.removeAll();
+    JPanel cabecera = panel(new BorderLayout(12, 0));
+    cabecera.add(etiqueta("Catálogo", true), WEST);
+    if (expirada) cabecera.add(etiqueta("Demo expirada: solo podés consultar el catálogo.", false), CENTER);
+    JButton nuevo = boton("Nuevo documento", true, () -> mostrarFicha(null, true, ""));
+    cabecera.add(acciones(nuevo, boton("Actualizar catálogo", false, () -> mostrarCatalogo(""))), EAST);
+    pantalla.add(cabecera, NORTH);
+    try {
+      var documentos = catalogo.leerCatalogo().values();
+      if (documentos.isEmpty()) {
+        pantalla.add(texto("El catálogo está vacío. Agregá el primer documento con «Nuevo documento».", 1));
+      } else {
+        JPanel lista = panel(new GridLayout(0, 1, 0, 12));
+        for (Documento doc : documentos) {
+          JPanel tarjeta = superficie(new BorderLayout(16, 8));
+          tarjeta.add(etiqueta(doc._tipo().toString(), false), NORTH);
+          tarjeta.add(texto(doc._titulo(), 2), CENTER);
+          tarjeta.add(boton("Ver detalle", false, () -> mostrarFicha(doc._id(), false, "")), EAST);
+          lista.add(tarjeta);
+        }
+        JScrollPane scroll = desplazar(lista, false);
+        scroll.getVerticalScrollBar().setUnitIncrement(20);
+        pantalla.add(scroll);
+      }
+      estado(aviso.isEmpty() ? documentos.size() + " documentos cargados." : aviso, false);
+    } catch (IllegalStateException error) {
+      boolean ausente = error.getCause() instanceof NoSuchFileException;
+      nuevo.setEnabled(ausente && !expirada);
+      pantalla.add(etiqueta(ausente ? "Catálogo no disponible" : "Archivo de catálogo inválido o ilegible", true));
+      String causa = ausente ? "No se encontró el catálogo. Podés crear el primer documento para inicializarlo."
+          : error.getMessage();
+      estado(aviso.isEmpty() ? causa : aviso + " " + causa, true);
+    }
+  }
+
+  private void mostrarFicha(UUID id, boolean editar, String aviso) {
+    Documento doc;
+    try {
+      doc = id == null ? null : catalogo.buscarPorId(id);
+    } catch (IllegalStateException error) {
+      mostrarCatalogo("");
+      estado((aviso.isEmpty() ? "" : aviso + " No se pudo actualizar el detalle. ") + error.getMessage(), true);
+      return;
+    }
+    pantalla.removeAll();
+    String titulo = id == null ? "Nuevo documento" : "Editar documento";
+    pantalla.add(etiqueta(editar ? titulo : "Detalle del documento", true), NORTH);
+    JPanel campos = editar ? panel(new GridBagLayout()) : superficie(new GridBagLayout());
+    JPanel cuerpo = panel(new BorderLayout(0, 12));
+    cuerpo.add(campos);
+    TipoDocumento tipoActual = doc == null ? TipoDocumento.LIBRO : doc._tipo();
+    JComboBox<TipoDocumento> tipo = new JComboBox<>(TipoDocumento.values());
+    tipo.setSelectedItem(tipoActual);
+    if (editar) fila(campos, "Tipo *", tipo, "tipo");
+    else lectura(campos, "Tipo", tipoActual, 1);
+    JTextComponent nombre = campo(campos, "Título", " *", "titulo", doc == null ? null : doc._titulo(), 2, editar);
+    JTextComponent descripcion = campo(campos, "Descripción", "", "descripcion", doc == null ? null : doc._descripcion(), 5, editar);
+    JTextComponent genero = campo(campos, "Género", "", "genero", doc == null ? null : doc._genero(), 1, editar);
+    JTextComponent valoracion = campo(campos, "Valoración", " (1–5)", "valoracion", doc == null ? null : doc._valoracion(), 1, editar);
+    JTextComponent paginas = campo(campos, "Páginas", " (1–999)", "paginas", doc == null ? null : doc._paginas(), 1, editar);
+    if (editar) {
+      cuerpo.add(etiqueta("* Obligatorio. Los demás campos pueden quedar vacíos.", false), NORTH);
+      JButton guardar = boton("Guardar", true, () -> {
+        Documento guardado = Documento.desdeFormulario(id == null ? UUID.randomUUID() : id,
+            (TipoDocumento) tipo.getSelectedItem(), nombre.getText(), descripcion.getText(), genero.getText(),
+            valoracion.getText(), paginas.getText());
+        catalogo.guardarDocumento(guardado, id == null);
+        mostrarFicha(guardado._id(), false, "Documento guardado correctamente.");
+      });
+      pantalla.add(acciones(guardar, boton("Cancelar", false, () -> {
+        if (id == null) mostrarCatalogo(""); else mostrarFicha(id, false, "");
+      })), SOUTH);
+    } else {
+      pantalla.add(acciones(boton("Volver al catálogo", false, () -> mostrarCatalogo("")),
+          boton("Editar", true, () -> mostrarFicha(id, true, "")), boton("Eliminar", true, () -> eliminar(id))), SOUTH);
+    }
+    pantalla.add(desplazar(cuerpo, editar), CENTER);
+    estado(aviso, false);
+  }
+
+  private static JTextArea lectura(JPanel campos, String nombre, Object valor, int filas) {
+    JTextArea area = texto(Objects.toString(valor, "Sin especificar"), filas);
+    area.getAccessibleContext().setAccessibleName(nombre);
+    JScrollPane scroll = new JScrollPane(area);
+    scroll.setBorder(createEmptyBorder());
+    fila(campos, nombre, scroll, null);
+    return area;
+  }
+  private static JTextComponent campo(JPanel campos, String nombre, String indicacion, String clave,
+                                      Object valor, int filas, boolean editar) {
+    if (!editar) return lectura(campos, nombre, valor, filas);
+    String contenido = Objects.toString(valor, "");
+    if (clave.equals("descripcion")) {
+      JTextArea area = new JTextArea(contenido, filas, 30);
+      area.setCaretPosition(0);
+      area.setLineWrap(true);
+      area.setWrapStyleWord(true);
+      area.setName(clave);
+      area.getAccessibleContext().setAccessibleName(nombre);
+      fila(campos, nombre, new JScrollPane(area), "descripcionScroll");
+      return area;
+    }
+    JTextField entrada = new JTextField(contenido, clave.equals("valoracion") || clave.equals("paginas") ? 8 : 30);
+    fila(campos, nombre + indicacion, entrada, clave);
+    return entrada;
+  }
+  private static void fila(JPanel campos, String nombre, JComponent control, String clave) {
+    GridBagConstraints posicion = new GridBagConstraints();
+    posicion.gridy = campos.getComponentCount() / 2;
+    posicion.anchor = GridBagConstraints.NORTHWEST;
+    posicion.insets = new Insets(6, 8, 6, 8);
+    JLabel etiqueta = clave == null ? etiqueta(nombre, false) : new JLabel(nombre);
+    etiqueta.setLabelFor(control);
+    campos.add(etiqueta, posicion);
+    posicion.gridx = 1;
+    posicion.weightx = 1;
+    posicion.fill = GridBagConstraints.HORIZONTAL;
+    control.setName(clave);
+    campos.add(control, posicion);
+  }
+  private void eliminar(UUID id) {
+    String titulo = catalogo.buscarPorId(id)._titulo();
+    JTextArea pregunta = texto("¿Eliminar «" + titulo + "»? Esta acción no se puede deshacer.", 4);
+    pregunta.setColumns(45);
+    int respuesta = JOptionPane.showOptionDialog(this, new JScrollPane(pregunta), "Confirmar eliminación",
+        JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, new String[]{"Eliminar", "Cancelar"}, "Cancelar");
+    if (respuesta == JOptionPane.YES_OPTION && comprobarDemo()) {
+      catalogo.eliminar(id);
+      mostrarCatalogo("Documento eliminado correctamente.");
+    }
   }
 }
