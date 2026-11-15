@@ -5,19 +5,26 @@ import java.nio.file.*;
 import java.time.*;
 
 public record ServicioPeriodoDemo(Path archivoInicio, Clock reloj) {
-  public ServicioPeriodoDemo { archivoInicio = archivoInicio.normalize(); }
+  public ServicioPeriodoDemo {
+    archivoInicio = archivoInicio.normalize();
+  }
+
   private static final Duration DURACION = Duration.ofMinutes(30);
   private static final String ARCHIVO_INICIO = "inicio-demo-java-library-app.txt";
 
   public ServicioPeriodoDemo() {
-    this(Path.of(System.getProperty("java.io.tmpdir"), "java-library-app", ARCHIVO_INICIO), Clock.systemUTC());
+    this(
+        Path.of(System.getProperty("java.io.tmpdir"), "java-library-app", ARCHIVO_INICIO),
+        Clock.systemUTC());
   }
 
   public boolean estaExpirada() {
     try {
       if (Files.notExists(archivoInicio)) registrarInicio();
+
       Instant inicio = Instant.parse(Files.readString(archivoInicio));
       Instant ahora = reloj.instant();
+
       return inicio.isAfter(ahora) || !ahora.isBefore(inicio.plus(DURACION));
     } catch (IOException | DateTimeException | SecurityException e) {
       return true;
@@ -28,6 +35,7 @@ public record ServicioPeriodoDemo(Path archivoInicio, Clock reloj) {
     Files.createDirectories(archivoInicio.toAbsolutePath().getParent());
     try {
       Files.writeString(archivoInicio, reloj.instant().toString(), StandardOpenOption.CREATE_NEW);
-    } catch (FileAlreadyExistsException ignored) {} // Otra instancia ya registró el inicio.
+    } catch (FileAlreadyExistsException ignored) {
+    }
   }
 }
