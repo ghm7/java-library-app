@@ -4,13 +4,17 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.time.*;
 
-public record ServicioPeriodoDemo(Path archivoInicio, Clock reloj) {
-  public ServicioPeriodoDemo {
-    archivoInicio = archivoInicio.normalize();
-  }
-
+public final class ServicioPeriodoDemo {
   private static final Duration DURACION = Duration.ofMinutes(30);
   private static final String ARCHIVO_INICIO = "inicio-demo-java-library-app.txt";
+
+  private final Path archivoInicio;
+  private final Clock reloj;
+
+  public ServicioPeriodoDemo(Path archivoInicio, Clock reloj) {
+    this.archivoInicio = archivoInicio.normalize();
+    this.reloj = reloj;
+  }
 
   public ServicioPeriodoDemo() {
     this(
