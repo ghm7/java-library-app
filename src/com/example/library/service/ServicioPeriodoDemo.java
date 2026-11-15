@@ -39,7 +39,7 @@ public final class ServicioPeriodoDemo {
     Files.createDirectories(archivoInicio.toAbsolutePath().getParent());
     try {
       Files.writeString(archivoInicio, reloj.instant().toString(), StandardOpenOption.CREATE_NEW);
-    } catch (FileAlreadyExistsException ignored) {
+    } catch (FileAlreadyExistsException ignorado) {
     }
   }
 }

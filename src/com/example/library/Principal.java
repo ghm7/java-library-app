@@ -14,7 +14,7 @@ public class Principal {
   private static void abrir() {
     try {
       UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-    } catch (ReflectiveOperationException | UnsupportedLookAndFeelException ignored) {
+    } catch (ReflectiveOperationException | UnsupportedLookAndFeelException ignorado) {
     }
 
     JFrame ventana = new JFrame("Biblioteca Java");

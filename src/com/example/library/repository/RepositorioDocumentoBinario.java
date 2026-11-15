@@ -121,7 +121,7 @@ public record RepositorioDocumentoBinario(Path ruta) {
   private void limpiarTemporal(Path archivo) {
     try {
       Files.deleteIfExists(archivo);
-    } catch (IOException ignored) {
+    } catch (IOException ignorado) {
     }
   }
 }
