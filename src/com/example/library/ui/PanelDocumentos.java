@@ -88,8 +88,13 @@ public class PanelDocumentos extends JPanel {
   private static JLabel etiqueta(String nombre, boolean titulo) {
     JLabel etiqueta = new JLabel(nombre);
 
-    etiqueta.setFont(titulo ? TITULO : NORMAL);
-    etiqueta.setForeground(titulo ? GRAFITO : new Color(0x6E6A67));
+    if (titulo) {
+      etiqueta.setFont(TITULO);
+      etiqueta.setForeground(GRAFITO);
+    } else {
+      etiqueta.setFont(NORMAL);
+      etiqueta.setForeground(new Color(0x6E6A67));
+    }
 
     return etiqueta;
   }
@@ -166,7 +171,11 @@ public class PanelDocumentos extends JPanel {
 
   private void estado(String aviso, boolean error) {
     mensaje.setText(aviso);
-    mensaje.setForeground(error ? new Color(0xC95745) : GRAFITO);
+    if (error) {
+      mensaje.setForeground(new Color(0xC95745));
+    } else {
+      mensaje.setForeground(GRAFITO);
+    }
     pantalla.revalidate();
     pantalla.repaint();
   }
@@ -207,19 +216,29 @@ public class PanelDocumentos extends JPanel {
         pantalla.add(scroll);
       }
 
-      estado(aviso.isEmpty() ? documentos.size() + " documentos cargados." : aviso, false);
+      if (aviso.isEmpty()) {
+        estado(documentos.size() + " documentos cargados.", false);
+      } else {
+        estado(aviso, false);
+      }
     } catch (IllegalStateException error) {
       boolean ausente = error.getCause() instanceof NoSuchFileException;
       nuevo.setEnabled(ausente && !expirada);
-      pantalla.add(
-          etiqueta(
-              ausente ? "Catálogo no disponible" : "Archivo de catálogo inválido o ilegible",
-              true));
-      String causa =
-          ausente
-              ? "No se encontró el catálogo. Podés crear el primer documento para inicializarlo."
-              : error.getMessage();
-      estado(aviso.isEmpty() ? causa : aviso + " " + causa, true);
+      String titulo;
+      String causa;
+      if (ausente) {
+        titulo = "Catálogo no disponible";
+        causa = "No se encontró el catálogo. Podés crear el primer documento para inicializarlo.";
+      } else {
+        titulo = "Archivo de catálogo inválido o ilegible";
+        causa = error.getMessage();
+      }
+      pantalla.add(etiqueta(titulo, true));
+      if (aviso.isEmpty()) {
+        estado(causa, true);
+      } else {
+        estado(aviso + " " + causa, true);
+      }
     }
   }
 
@@ -227,64 +246,71 @@ public class PanelDocumentos extends JPanel {
     Documento doc;
 
     try {
-      doc = id == null ? null : catalogo.buscarPorId(id);
+      if (id == null) {
+        doc = null;
+      } else {
+        doc = catalogo.buscarPorId(id);
+      }
     } catch (IllegalStateException error) {
       mostrarCatalogo("");
-      estado(
-          (aviso.isEmpty() ? "" : aviso + " No se pudo actualizar el detalle. ")
-              + error.getMessage(),
-          true);
+      if (aviso.isEmpty()) {
+        estado(error.getMessage(), true);
+      } else {
+        estado(aviso + " No se pudo actualizar el detalle. " + error.getMessage(), true);
+      }
 
       return;
     }
 
     pantalla.removeAll();
 
-    String titulo = id == null ? "Nuevo documento" : "Editar documento";
-    pantalla.add(etiqueta(editar ? titulo : "Detalle del documento", true), NORTH);
+    String titulo;
+    if (!editar) {
+      titulo = "Detalle del documento";
+    } else if (id == null) {
+      titulo = "Nuevo documento";
+    } else {
+      titulo = "Editar documento";
+    }
+    pantalla.add(etiqueta(titulo, true), NORTH);
 
-    JPanel campos = editar ? panel(new GridBagLayout()) : superficie(new GridBagLayout());
+    JPanel campos;
+    if (editar) {
+      campos = panel(new GridBagLayout());
+    } else {
+      campos = superficie(new GridBagLayout());
+    }
     JPanel cuerpo = panel(new BorderLayout(0, 12));
     cuerpo.add(campos);
 
-    TipoDocumento tipoActual = doc == null ? TipoDocumento.LIBRO : doc._tipo();
+    TipoDocumento tipoActual = TipoDocumento.LIBRO;
+    String tituloActual = null;
+    String descripcionActual = null;
+    String generoActual = null;
+    Integer valoracionActual = null;
+    Integer paginasActuales = null;
+    if (doc != null) {
+      tipoActual = doc._tipo();
+      tituloActual = doc._titulo();
+      descripcionActual = doc._descripcion();
+      generoActual = doc._genero();
+      valoracionActual = doc._valoracion();
+      paginasActuales = doc._paginas();
+    }
     JComboBox<TipoDocumento> tipo = new JComboBox<>(TipoDocumento.values());
     tipo.setSelectedItem(tipoActual);
 
     if (editar) fila(campos, "Tipo *", tipo, "tipo");
     else lectura(campos, "Tipo", tipoActual, 1);
 
-    JTextComponent nombre =
-        campo(campos, "Título", " *", "titulo", doc == null ? null : doc._titulo(), 2, editar);
+    JTextComponent nombre = campo(campos, "Título", " *", "titulo", tituloActual, 2, editar);
     JTextComponent descripcion =
-        campo(
-            campos,
-            "Descripción",
-            "",
-            "descripcion",
-            doc == null ? null : doc._descripcion(),
-            5,
-            editar);
-    JTextComponent genero =
-        campo(campos, "Género", "", "genero", doc == null ? null : doc._genero(), 1, editar);
+        campo(campos, "Descripción", "", "descripcion", descripcionActual, 5, editar);
+    JTextComponent genero = campo(campos, "Género", "", "genero", generoActual, 1, editar);
     JTextComponent valoracion =
-        campo(
-            campos,
-            "Valoración",
-            " (1–5)",
-            "valoracion",
-            doc == null ? null : doc._valoracion(),
-            1,
-            editar);
+        campo(campos, "Valoración", " (1–5)", "valoracion", valoracionActual, 1, editar);
     JTextComponent paginas =
-        campo(
-            campos,
-            "Páginas",
-            " (1–999)",
-            "paginas",
-            doc == null ? null : doc._paginas(),
-            1,
-            editar);
+        campo(campos, "Páginas", " (1–999)", "paginas", paginasActuales, 1, editar);
 
     if (editar) {
       cuerpo.add(etiqueta("* Obligatorio. Los demás campos pueden quedar vacíos.", false), NORTH);
@@ -294,9 +320,15 @@ public class PanelDocumentos extends JPanel {
               "Guardar",
               true,
               () -> {
+                UUID idDocumento;
+                if (id == null) {
+                  idDocumento = UUID.randomUUID();
+                } else {
+                  idDocumento = id;
+                }
                 Documento guardado =
                     Documento.desdeFormulario(
-                        id == null ? UUID.randomUUID() : id,
+                        idDocumento,
                         (TipoDocumento) tipo.getSelectedItem(),
                         nombre.getText(),
                         descripcion.getText(),
@@ -368,8 +400,13 @@ public class PanelDocumentos extends JPanel {
       return area;
     }
 
-    JTextField entrada =
-        new JTextField(contenido, clave.equals("valoracion") || clave.equals("paginas") ? 8 : 30);
+    int columnas;
+    if (clave.equals("valoracion") || clave.equals("paginas")) {
+      columnas = 8;
+    } else {
+      columnas = 30;
+    }
+    JTextField entrada = new JTextField(contenido, columnas);
     fila(campos, nombre + indicacion, entrada, clave);
 
     return entrada;
@@ -380,7 +417,12 @@ public class PanelDocumentos extends JPanel {
     posicion.gridy = campos.getComponentCount() / 2;
     posicion.anchor = GridBagConstraints.NORTHWEST;
     posicion.insets = new Insets(6, 8, 6, 8);
-    JLabel etiqueta = clave == null ? etiqueta(nombre, false) : new JLabel(nombre);
+    JLabel etiqueta;
+    if (clave == null) {
+      etiqueta = etiqueta(nombre, false);
+    } else {
+      etiqueta = new JLabel(nombre);
+    }
     etiqueta.setLabelFor(control);
     campos.add(etiqueta, posicion);
 

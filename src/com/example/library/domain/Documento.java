@@ -33,7 +33,11 @@ public record Documento(
   }
 
   private static String opcional(String texto) {
-    return texto == null || texto.isBlank() ? null : texto;
+    if (texto == null || texto.isBlank()) {
+      return null;
+    } else {
+      return texto;
+    }
   }
 
   private static Integer validarRango(Integer valor, int maximo, String mensaje) {

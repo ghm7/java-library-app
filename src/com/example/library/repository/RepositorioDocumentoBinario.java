@@ -21,8 +21,12 @@ public record RepositorioDocumentoBinario(Path ruta) {
   }
 
   public void guardarDocumento(Documento documento, boolean nuevo) {
-    var catalogo =
-        nuevo && Files.notExists(ruta) ? new LinkedHashMap<UUID, Documento>() : leerCatalogo();
+    Map<UUID, Documento> catalogo;
+    if (nuevo && Files.notExists(ruta)) {
+      catalogo = new LinkedHashMap<>();
+    } else {
+      catalogo = leerCatalogo();
+    }
     UUID id = documento._id();
 
     if (nuevo && catalogo.containsKey(id))
@@ -54,6 +58,7 @@ public record RepositorioDocumentoBinario(Path ruta) {
 
       if (contenido == null || contenido.getClass() != ArrayList.class)
         throw new IOException("Se esperaba una lista de documentos.");
+
       var catalogo = new LinkedHashMap<UUID, Documento>();
 
       for (Object elemento : (ArrayList<?>) contenido) {
